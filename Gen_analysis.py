@@ -38,6 +38,12 @@ def make_chain(file_names):
     for file_name in file_names:
         chain.Add(file_name)
     return chain
+
+def overall_efficiency(all, trigger):
+    all_c = all.Count().GetValue()
+    trigger_c = trigger.Count().GetValue()
+    eff = trigger_c/all_c
+    return eff
 #─────────────────────────────────────── Get files ────────────────────────────────────────
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Argument for Gen_Analysis')
@@ -117,18 +123,11 @@ if __name__ == '__main__':
     )
     #─────────────────────────────────────── Print column names ────────────────────────────────────────
 
-    all_cols = [str(c) for c in df.GetColumnNames()]
-    L1_cols = [c for c in all_cols if "L1_p" in c]
-    print("\nGenPart columns found:")
-    for c in sorted(L1_cols):
-        print(f"  {c}  [{df.GetColumnType(c)}]")
-
-        df_L1 = df.Filter("tau_channel  == 2")
-        df_L1_filtered = df_L1.Filter(f"{c} == true")
-        
-        efficiency_L1  = overall_efficiency(df_L1, df_L1_filtered)
-        print(efficiency_L1)
-
+    # all_cols = [str(c) for c in df.GetColumnNames()]
+    # L1_cols = [c for c in all_cols if "L1_p" in c]
+    # print("\nGenPart columns found:")
+    # for c in sorted(L1_cols):
+        # print(f"  {c}  [{df.GetColumnType(c)}]")
     #─────────────────────────────────────── Filter dataframe ────────────────────────────────────────
 
     df_tau_e = df.Filter("tau_channel  == 0")
@@ -141,18 +140,22 @@ if __name__ == '__main__':
 
     df_tau_h = df.Filter("tau_channel  == 2 ")
     df_tau_h_HLT = df_tau_h.Filter("HLT_DoubleMediumDeepTauPFTauHPS35_eta2p1 == true")
-    df_tau_h_NGT = df_tau_h.Filter("DST_PFScouting == true")
+    df_tau_h_NGT = df_tau_h.Filter("DST_PFScouting == true") 
 
-    def overall_efficiency(all, trigger):
-        all_c = all.Count().GetValue()
-        trigger_c = trigger.Count().GetValue()
-        eff = trigger_c/all_c
-        return eff 
+    efficiency_elec         = overall_efficiency(df_tau_e, df_tau_e_HLT)
+    efficiency_muon         = overall_efficiency(df_tau_m, df_tau_m_HLT)
+    efficiency_DiTau35      = overall_efficiency(df_tau_h, df_tau_h_HLT)
+    efficiency_NGT_e        = overall_efficiency(df_tau_e, df_tau_e_NGT)
+    efficiency_NGT_mu       = overall_efficiency(df_tau_m, df_tau_m_NGT)
+    efficiency_NGT          = overall_efficiency(df_tau_h, df_tau_h_NGT)
 
-    efficiency_DiTau35 = overall_efficiency(df_tau_h, df_tau_h_HLT)
-    efficiency_NGT     = overall_efficiency(df_tau_h, df_tau_h_NGT)
-    print(efficiency_DiTau35)
-    print(efficiency_NGT)
+    print(f"{'Efficiency HLT on electron channel'} {efficiency_elec}")
+    print(f"{'Efficiency HLT on muon channel'} {efficiency_muon}")
+    print(f"{'Efficiency HLT on hadronic channel'} {efficiency_DiTau35}")
+    print(f"{'Efficiency NGT on electron channel'} {efficiency_NGT_e}")
+    print(f"{'Efficiency NGT on muon channel'} {efficiency_NGT_mu}")
+    print(f"{'Efficiency NGT on hadronic channel'} {efficiency_NGT}")
+  
     #─────────────────────────────────────── Define and plot histograms 1D ────────────────────────────────────────
 
     separate_files = False      #True gets 1 file with all the histograms, false gets a separate file for each histogram

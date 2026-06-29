@@ -11,7 +11,7 @@ using ROOT::Math::PtEtaPhiMVector;
 
 int Get_H_idx(int pdg, const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
 {
-    for (int i = 0; i < pdgId.size(); i++){
+    for (std::size_t i = 0; i < pdgId.size(); i++){
         if (!(status[i] & (1 << 13))) continue;
         
         int my_pdg = pdgId.at(i);                               // PDG of particle p at idx i 
@@ -95,7 +95,7 @@ float Get_mHH(const RVecF pt, const RVecF eta, const RVecF phi, const RVecF M, i
     return HH.M();
 }
 
-RVecF Get_tau_pt(const RVecI& tau_indices, const RVecI& pt)
+RVecF Get_tau_pt(const RVecI& tau_indices, const RVecF& pt)
 {
     if (tau_indices[0] < 0 || tau_indices[1] < 0) return {-1.f, -1.f};
 
@@ -105,3 +105,78 @@ RVecF Get_tau_pt(const RVecI& tau_indices, const RVecI& pt)
     if (pt1 >= pt2) return {pt1, pt2};
     else return {pt2, pt1};
 }
+
+RVecF Get_tau_eta(const RVecI& tau_indices, const RVecF& pt, const RVecF& eta)
+{
+    int tau1 = -1; int tau2 = -1;
+    if(pt[tau_indices[0]] > pt[tau_indices[1]]){
+        tau1 = tau_indices[0]; tau2 = tau_indices[1];
+    }
+    else tau1 = tau_indices[1]; tau2 = tau_indices[0];
+    
+    float eta1 = eta[tau1];
+    float eta2 = eta[tau2];
+
+    return {eta1, eta2};
+}
+
+//////////////////////////////////// RECO FUNCTIONS
+
+ROOT::RVec<PtEtaPhiMVector> get_4vector(const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& M)
+{
+    ROOT::RVec<PtEtaPhiMVector> four_vectors;
+    four_vectors.reserve(pt.size());
+    for (std::size_t i = 0; i < pt.size(); i++){
+        four_vectors.emplace_back(pt.at(i), eta.at(i), phi.at(i), M.at(i));
+    }
+    return four_vectors;
+}
+
+float get_ID_threshold(const float pt)
+{
+    double t1 = 0.649, t2 = 0.441, t3 = 0.05, x1 = 35, x2 = 100, x3 = 300; 
+    if (pt <= x1) return t1; 
+    if (pt >= x3) return t3; 
+    if (pt < x2) return (t2 - t1) / (x2 - x1) * (pt - x1) + t1; 
+    return (t3 - t2) / (x3 - x2) * (pt - x2) + t2;
+}
+
+RVecI deltaR_matching(const RVecI& gen_tau_indices, const RVecF& Gen_eta, const RVecF& Gen_phi, const ROOT::RVec<PtEtaPhiMVector>& reco_tau, const RVecF& TauVSe, const RVecF& TauVSjet, const RVecF& TauVSmu)
+{
+    RVecF matched_indices;
+    std::vector<bool> reco_used(reco_tau.size(), false);
+    
+    for (std::size_t i = 0; i < gen_tau_indices.size(); i++){   
+        int idx_gen = gen_tau_indices[i];        
+        
+        double min_dR = 999.0;
+        int idx_reco_tau = -1;                                         // Loops through every index of gen tau i
+        
+        for (std::size_t j = 0; j < reco_tau.size(); j++){             // Loops through every index of reco tau j 
+            if (reco_used[j]) continue;
+            float id_threshold = get_ID_threshold(reco_tau[j].pt());
+            if (TauVSjet[j] < id_threshold) continue;
+
+            double D_eta = Gen_eta[idx_gen] - reco_tau[j].eta();
+            double D_phi = Gen_phi[idx_gen] - reco_tau[j].phi();
+            while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;                  // M_PI is pi constant, this line checks the periodicity of the angle
+            while (D_phi < -M_PI) D_phi += 2.0 * M_PI;                  // Making sure we remain between 0 en 180 degrees
+            
+            double current_dR = std::sqrt(D_eta*D_eta+ D_phi*D_phi);
+            if (current_dR < min_dR) {
+                min_dR = current_dR;
+                idx_reco_tau = j;
+            }
+        }
+
+        if (idx_reco_tau != -1 && min_dR <= 0.3) {
+            matched_indices.push_back(idx_reco_tau);
+            reco_used[idx_reco_tau] = true;
+        } else {
+            matched_indices.push_back(-1); 
+        }
+    }
+
+    return matched_indices;
+}
+
