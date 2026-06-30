@@ -169,6 +169,11 @@ if __name__ == '__main__':
         "h_h_mHH":      df_tau_h.AsNumpy(["HH_mass"])["HH_mass"],
         "h_h_mHH_HLT":  df_tau_h_HLT.AsNumpy(["HH_mass"])["HH_mass"],
 
+        "hadr_pt":      df_tau_h.AsNumpy(["tau_pt"])["tau_pt"],
+        "hadr_pt_HLT":  df_tau_h_HLT.AsNumpy(["tau_pt"])["tau_pt"],
+        "hadr_pt_NGT":  df_tau_h_NGT.AsNumpy(["tau_pt"])["tau_pt"],
+        
+        
         "hadr_pt_leading":      df_tau_h.AsNumpy(["tau_pt_lead"])["tau_pt_lead"],
         "hadr_pt_leading_HLT":  df_tau_h_HLT.AsNumpy(["tau_pt_lead"])["tau_pt_lead"],
         "hadr_pt_leading_NGT":  df_tau_h_NGT.AsNumpy(["tau_pt_lead"])["tau_pt_lead"],
@@ -207,9 +212,11 @@ if __name__ == '__main__':
         # "hadr_eta1_HLT":  {"label": r"Events that pass HLT",  "xlabel" : r"$\eta \tau_1$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "yellowgreen", "histtype": "fill", "hatch": ""},
         # "hadr_eta1_NGT":  {"label": r"Events that pass NGT",  "xlabel" : r"$\eta \tau_1$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "yellowgreen", "histtype": "step", "hatch": "//"},
 
-        "hadr_eta2":      {"label": r"All events",            "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "greenyellow", "histtype": "step", "hatch": ""},
-        "hadr_eta2_HLT":  {"label": r"Events that pass HLT",  "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "forestgreen",  "histtype": "fill", "hatch": ""},
-        "hadr_eta2_NGT":  {"label": r"Events that pass NGT",  "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "forestgreen", "histtype": "step", "hatch": "//"},
+        "hadr_pt":      {"label": r"All events",            "xlabel" : r"$p_T$ [GeV]", "ylabel": "Events", "bins": 30, "range": (0, 300), "color": "palevioletred", "histtype": "step", "hatch": ""},
+
+    #     "hadr_eta2":      {"label": r"All events",            "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "greenyellow", "histtype": "step", "hatch": ""},
+    #     "hadr_eta2_HLT":  {"label": r"Events that pass HLT",  "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "forestgreen",  "histtype": "fill", "hatch": ""},
+    #     "hadr_eta2_NGT":  {"label": r"Events that pass NGT",  "xlabel" : r"$\eta \tau_2$", "ylabel": "Events", "bins": 30, "range": (-3, 3), "color": "forestgreen", "histtype": "step", "hatch": "//"},
     }
 
     def make_panel(ax, col, cfg):

@@ -45,9 +45,30 @@ RVecI Get_tau_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVec
     for (int i = 0; i < n; i++) {
         if (!(status[i] & (1 << 13))) continue;
         if (std::abs(pdgId[i]) != 15) continue;
-
+             
         int current = idx_mother[i];
         while (current >= 0 && std::abs(pdgId[current]) == 15)
+            current = idx_mother[current];
+
+        if (current >= 0 && pdgId[current] == 25)
+            result.push_back(i);
+    }
+
+    if (result.size() != 2) return {-1, -1};
+    return result;
+}
+
+RVecI Get_b_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
+{
+    RVecI result;
+    int n = pdgId.size();
+
+    for (int i = 0; i < n; i++) {
+        if (!(status[i] & (1 << 13))) continue;
+        if (std::abs(pdgId[i]) != 5) continue;
+             
+        int current = idx_mother[i];
+        while (current >= 0 && std::abs(pdgId[current]) == 5)
             current = idx_mother[current];
 
         if (current >= 0 && pdgId[current] == 25)
@@ -120,6 +141,7 @@ RVecF Get_tau_eta(const RVecI& tau_indices, const RVecF& pt, const RVecF& eta)
     return {eta1, eta2};
 }
 
+
 //////////////////////////////////// RECO FUNCTIONS
 
 ROOT::RVec<PtEtaPhiMVector> get_4vector(const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& M)
@@ -141,9 +163,9 @@ float get_ID_threshold(const float pt)
     return (t3 - t2) / (x3 - x2) * (pt - x2) + t2;
 }
 
-RVecI deltaR_matching(const RVecI& gen_tau_indices, const RVecF& Gen_eta, const RVecF& Gen_phi, const ROOT::RVec<PtEtaPhiMVector>& reco_tau, const RVecF& TauVSe, const RVecF& TauVSjet, const RVecF& TauVSmu)
+RVecI deltaR_matching(const RVecI& gen_tau_indices, const RVecF& Gen_eta, const RVecF& Gen_phi, const ROOT::RVec<PtEtaPhiMVector>& reco_tau, const RVecF& TauVSjet)
 {
-    RVecF matched_indices;
+    RVecI matched_indices;
     std::vector<bool> reco_used(reco_tau.size(), false);
     
     for (std::size_t i = 0; i < gen_tau_indices.size(); i++){   
@@ -176,7 +198,136 @@ RVecI deltaR_matching(const RVecI& gen_tau_indices, const RVecF& Gen_eta, const 
             matched_indices.push_back(-1); 
         }
     }
-
+    
     return matched_indices;
 }
 
+RVecF Get_DpT(const RVecI& gen_tau_idx, const RVecI& reco_tau_indices, const RVecF& pt_gen, const RVecF& pt_reco)
+{
+    RVecF DpT;
+
+    for (std::size_t i = 0; i < gen_tau_idx.size(); i++){
+        int idx_gen = gen_tau_idx[i];
+        int idx_reco = reco_tau_indices[i];
+        if (idx_gen < 0) continue; if (idx_reco < 0) continue;
+
+        float gen_pt = pt_gen[idx_gen];
+        float reco_pt = pt_reco[idx_reco];
+        
+        DpT.push_back(gen_pt - reco_pt);
+    }
+    return DpT;
+}
+
+RVecF Get_Deta(const RVecI& gen_tau_idx, const RVecI& reco_tau_indices, const RVecF& eta_gen, const RVecF& eta_reco)
+{
+    
+    RVecF Deta;
+
+    for (std::size_t i = 0; i < gen_tau_idx.size(); i++){
+        int idx_gen = gen_tau_idx[i];
+        int idx_reco = reco_tau_indices[i];
+        if (idx_gen < 0) continue;
+        if (idx_reco < 0) continue;
+
+        float gen_eta = eta_gen[idx_gen];
+        float reco_eta = eta_reco[idx_reco];
+        
+        Deta.push_back(gen_eta - reco_eta);
+    }
+    return Deta;
+}
+
+RVecF Get_Dphi(const RVecI& gen_tau_idx, const RVecI& reco_tau_indices, const RVecF& phi_gen, const RVecF& phi_reco)
+{
+    
+    RVecF Dphi;
+
+    for (std::size_t i = 0; i < gen_tau_idx.size(); i++){
+        int idx_gen = gen_tau_idx[i];
+        int idx_reco = reco_tau_indices[i];
+        if (idx_gen < 0) continue;
+        if (idx_reco < 0) continue;
+
+        float gen_phi = phi_gen[idx_gen];
+        float reco_phi = phi_reco[idx_reco];
+        
+        Dphi.push_back(gen_phi - reco_phi);
+    }
+    return Dphi;
+}
+
+RVecF Get_recotau_pt(const RVecI& tau_idx, const RVecF& pt)
+{
+    if (tau_idx[0] < 0 || tau_idx[1] < 0) return {-1.f, -1.f};
+
+    RVecF tau_pt;
+    for (std::size_t i = 0; i < tau_idx.size(); i++) {
+        tau_pt.push_back(pt[tau_idx.at(i)]);
+    }
+    return tau_pt;
+}
+
+RVecF Get_dR(const RVecI& gen_tau_indices, const RVecI& reco_tau_indices, const RVecF& Gen_eta, const RVecF& Gen_phi, const RVecF& reco_eta, const RVecF& reco_phi)
+{
+    RVecF dRs;
+
+    for (std::size_t i = 0; i < gen_tau_indices.size(); i++) {
+        int idx_gen = gen_tau_indices[i];
+        int idx_reco = reco_tau_indices[i];
+        if (idx_gen < 0) continue;
+        if (idx_reco < 0) continue;
+    
+        double D_eta = Gen_eta[idx_gen] - reco_eta[idx_reco];
+        double D_phi = Gen_phi[idx_gen] - reco_phi[idx_reco];
+        
+        while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;
+        while (D_phi < -M_PI) D_phi += 2.0 * M_PI;
+        
+        dRs.push_back(std::sqrt(D_eta*D_eta + D_phi*D_phi));
+        }
+    return dRs;
+}
+
+
+RVecI deltaR_matching_jets(const RVecI& gen_b_indices, const RVecF& Gen_eta, const RVecF& Gen_phi, const ROOT::RVec<PtEtaPhiMVector>& reco_jet, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_b, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_bb, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_c, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_g, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_lepb, const RVecF& hltAK4PuppiJet_DeepFlavour_prob_uds)
+{
+    RVecI matched_indices;
+    std::vector<bool> reco_used(reco_jet.size(), false);
+    
+    for (std::size_t i = 0; i < gen_b_indices.size(); i++){   
+        int idx_gen = gen_b_indices[i];        
+        
+        double min_dR = 999.0;
+        int idx_reco_jet = -1;                                         // Loops through every index of gen tau i
+        
+        for (std::size_t j = 0; j < reco_jet.size(); j++){             // Loops through every index of reco tau j 
+            if (reco_used[j]) continue;
+            float total_prob = hltAK4PuppiJet_DeepFlavour_prob_b[j] + hltAK4PuppiJet_DeepFlavour_prob_bb[j] + 
+                                hltAK4PuppiJet_DeepFlavour_prob_c[j] + hltAK4PuppiJet_DeepFlavour_prob_g[j] + 
+                                hltAK4PuppiJet_DeepFlavour_prob_lepb[j] + hltAK4PuppiJet_DeepFlavour_prob_uds[j];
+            if (total_prob == 0) continue;
+            float prob_b = hltAK4PuppiJet_DeepFlavour_prob_b[j] / total_prob; 
+            if (prob_b < 0.92) continue;
+
+            double D_eta = Gen_eta[idx_gen] - reco_jet[j].eta();
+            double D_phi = Gen_phi[idx_gen] - reco_jet[j].phi();
+            while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;                  // M_PI is pi constant, this line checks the periodicity of the angle
+            while (D_phi < -M_PI) D_phi += 2.0 * M_PI;                  // Making sure we remain between 0 en 180 degrees
+            
+            double current_dR = std::sqrt(D_eta*D_eta+ D_phi*D_phi);
+            if (current_dR < min_dR) {
+                min_dR = current_dR;
+                idx_reco_jet = j;
+            }
+        }
+
+        if (idx_reco_jet != -1 && min_dR <= 0.3) {
+            matched_indices.push_back(idx_reco_jet);
+            reco_used[idx_reco_jet] = true;
+        } else {
+            matched_indices.push_back(-1); 
+        }
+    }
+    return matched_indices;
+}
