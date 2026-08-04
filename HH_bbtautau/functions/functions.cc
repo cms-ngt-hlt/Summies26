@@ -335,6 +335,20 @@ RVecI deltaR_matching_jets(const RVecI& gen_b_idx, const RVecF& Gen_eta, const R
     return matched_indices;
 }
 
+RVecF Get_bscore(const RVecI& jet_idx, const RVecF& prob_b, const RVecF& prob_bb, const RVecF& prob_c, const RVecF& prob_g, const RVecF& prob_lepb, const RVecF& prob_uds){
+    
+    RVecF score;
+
+    for (std::size_t i=0; i < jet_idx.size() ; i++){
+        int idx = jet_idx[i];
+        float total_prob = prob_b[idx] + prob_bb[idx] + prob_c[idx] + prob_g[idx] + prob_lepb[idx] + prob_uds[idx];
+        if (total_prob == 0) continue;
+        float bscore = (prob_b[idx] + prob_bb[idx] + prob_lepb[idx]) / total_prob;
+        score.push_back(bscore); 
+    }
+    return score;
+}
+
 RVecF Get_dR_tau(const ROOT::RVec<PtEtaPhiMVector>& gen_vis_tau_p4, const RVecI& matched_tau_idx,
                   const RVecF& reco_eta, const RVecF& reco_phi)
 {
