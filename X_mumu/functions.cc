@@ -8,7 +8,7 @@ using ROOT::RVecF;
 using ROOT::RVecI;
 using ROOT::Math::PtEtaPhiMVector; 
 
-RVecI get_muon_idx(const RVecI& pdg, const RVecI& status)
+RVecI get_muon_idx(const RVecI& pdg, const RVecI& parent, const RVecI& status)
 {
     RVecI results;
     for (std::size_t i = 0; i < pdg.size(); ++i)
@@ -16,7 +16,8 @@ RVecI get_muon_idx(const RVecI& pdg, const RVecI& status)
         if (!(status[i] & (1 << 13))) continue;
         
         int pdg_i = pdg.at(i);
-        if (std::abs(pdg_i) == 13){
+        int parent_idx = parent.at(i);
+        if (std::abs(pdg_i) == 13 and std::abs(pdg.at(parent_idx)) == 1023){
             results.push_back(i);
         }
     }
@@ -28,6 +29,7 @@ RVecF get_variable(const RVecI& idx, const RVecF& variable)
     RVecF results;
     for (std::size_t i = 0; i < idx.size(); i++){
         int idx_i = idx.at(i);
+        if (idx_i < 0) continue;
         results.push_back(variable.at(idx_i));
     }
     return results;
@@ -56,6 +58,7 @@ RVecI deltaR_muon_pairing(const RVecI& idx, const RVecF& eta, const RVecF& phi, 
         if (idx.size() < 2) continue;
         for (std::size_t j = i+1; j < idx.size(); j++){
             int idx_i = idx.at(i); int idx_j = idx.at(j);
+            if (idx_i < 0 || idx_j < 0 ) continue;
 
             double D_eta = eta.at(idx_i) - eta.at(idx_j);
             double D_phi = phi.at(idx_i) - phi.at(idx_j);
@@ -165,7 +168,7 @@ RVecI truth_matching(const RVecI& indices, const RVecF& gen_eta, const RVecF& ge
             matched_indices.push_back(idx_reco_mu);
             reco_used[idx_reco_mu] = true;
         } else {
-            matched_indices.push_back(-1);
+            matched_indices.push_back(-999);
         }
     }
     return matched_indices;
