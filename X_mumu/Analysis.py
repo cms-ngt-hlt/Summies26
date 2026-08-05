@@ -10,12 +10,19 @@ import argparse
 import shutil, os
 from scipy.optimize import curve_fit
 
-
 ROOT.gROOT.SetBatch(True)
 hep.style.use(hep.style.CMS)
 
-SRC = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/functions.cc"
-TMP = "/tmp/functions.cc"
+from pathlib import Path
+import tempfile
+
+REPO_DIR = Path(__file__).resolve().parent
+
+SRC = REPO_DIR / "functions.cc"
+HDR_DIR = REPO_DIR / "headers"
+
+tmp_dir = Path(tempfile.mkdtemp(prefix="root_aclic_"))
+TMP = tmp_dir / "functions.cc"
 
 shutil.copy(SRC, TMP)
 ROOT.gROOT.ProcessLine(f'.L {TMP}+')
@@ -150,7 +157,7 @@ def overall_efficiency(all, trigger):
 #─────────────────────────────────────── Plotting ────────────────────────────────────────
 
 def plot(data_per_mass, var, bins, hist_range, xlabel, save_as, scale):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/Displaced/"
+    path = f"{plot_dir}/Displaced/"
     os.makedirs(path, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -180,7 +187,7 @@ def plot(data_per_mass, var, bins, hist_range, xlabel, save_as, scale):
 
 
 def plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, var, bins, hist_range, xlabel):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/Comparisons/"
+    path = f"{plot_dir}/Comparisons/"
     os.makedirs(path, exist_ok=True)
     
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -212,7 +219,7 @@ def plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, var, 
     print(f"Saved Comparison_{var}.png")
 
 def plot_efficiency(mass, data_per_mass, data_per_mass_NGT, var, bins, hist_range, xlabel, eff_color):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/Efficiencies/"
+    path = f"{plot_dir}/Efficiencies/"
     os.makedirs(path, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -249,7 +256,7 @@ def plot_efficiency(mass, data_per_mass, data_per_mass_NGT, var, bins, hist_rang
 
 
 def plot_genVsReco(mass, data_per_mass_match, var_gen, var_reco, bins, xlabel):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/GenVsReco/"
+    path = f"{plot_dir}/GenVsReco/"
     os.makedirs(path, exist_ok=True)
     
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -274,7 +281,7 @@ def plot_genVsReco(mass, data_per_mass_match, var_gen, var_reco, bins, xlabel):
 
 #─────────────────────────────────────── Fitting ────────────────────────────────────────
 def plot_fit(mass, data_per_mass_match, var_gen, bins, xlabel, var_reco=None):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/Fit/"
+    path = f"{plot_dir}/Fit/"
     os.makedirs(path, exist_ok=True)
     
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -326,7 +333,7 @@ def plot_fit(mass, data_per_mass_match, var_gen, bins, xlabel, var_reco=None):
 resolution_gen = {}
 resolution_reco = {}
 def plot_resolution(data_per_mass_match, var_gen, var_reco=None):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/X_mumu/plots/Resolution/"
+    path = f"{plot_dir}/Resolution/"
     os.makedirs(path, exist_ok=True)
     
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -356,8 +363,8 @@ def plot_resolution(data_per_mass_match, var_gen, var_reco=None):
             plt.errorbar(mass, resolution_reco[mass], yerr=resolution_err2, color='darkmagenta', marker="x", markersize="11", label="RECO")
 
 
-    ax.set_xlabel("m$_X$ [GeV]", fontsize=24)
-    ax.set_ylabel("Resolution $\sigma / \mu$", fontsize=24)
+    ax.set_xlabel(r"m$_X$ [GeV]", fontsize=24)
+    ax.set_ylabel(r"Resolution $\sigma / \mu$", fontsize=24)
     handles, labels = ax.get_legend_handles_labels()
     by_label = dict(zip(labels, handles))  # duplicate labels overwrite each other, keeping only one
     ax.legend(by_label.values(), by_label.keys(), loc="upper right", fontsize=16)
@@ -372,9 +379,11 @@ def plot_resolution(data_per_mass_match, var_gen, var_reco=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Argument for Analysis_all')
     parser.add_argument('--run-comparison', action='store_true', required=False, help='Run comparison plots across all generated X masses.')
+    parser.add_argument('--output-dir', required=False, help='Output directory for plots.', default='./')
     args = parser.parse_args()
 
-    os.makedirs("plots", exist_ok=True)
+    plot_dir = args.output_dir + '/plots/'
+    os.makedirs(plot_dir, exist_ok=True)
 
     mass_dirs = {
         1:  "/eos/user/e/evernazz/Sarah/Xmumu/Xmumu1/",
@@ -424,66 +433,66 @@ if __name__ == '__main__':
         data_per_mass_NGT[mass] = {variable: flatten(column_NGT[variable]) for variable in to_plot}
         data_per_mass_match[mass] = {variable: flatten(column_match[variable]) for variable in to_plot}
 
-    plot(data_per_mass, "nGen_muons",    bins=10, hist_range=(0, 10),          xlabel= "Gen number of $\mu$", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_muon_pt",   bins=30, hist_range=(0, 80),          xlabel= "Gen p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_muon_eta",  bins=30, hist_range=(-4, 6),          xlabel= "Gen $\eta(\mu)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_muon_phi",  bins=30, hist_range=(-np.pi, np.pi),  xlabel= "Gen $\phi(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "nGen_muons",    bins=10, hist_range=(0, 10),          xlabel=r"Gen number of $\mu$", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_muon_pt",   bins=30, hist_range=(0, 80),          xlabel=r"Gen p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_muon_eta",  bins=30, hist_range=(-4, 6),          xlabel=r"Gen $\eta(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_muon_phi",  bins=30, hist_range=(-np.pi, np.pi),  xlabel=r"Gen $\phi(\mu)$", save_as='png', scale='linear')
     
-    plot(data_per_mass, "Gen_muon_dR",bins=30, hist_range=(0, 1),           xlabel= "Gen $\Delta R$ X [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_muon_dR",bins=30, hist_range=(0, 1),           xlabel=r"Gen $\Delta R$ X [GeV]", save_as='png', scale='linear')
 
-    plot(data_per_mass, "Gen_X_pt",   bins=30, hist_range=(0, 80),          xlabel= "Gen p$_T$ X [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_X_eta",  bins=30, hist_range=(-4, 6),          xlabel= "Gen $\eta(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_X_phi",  bins=30, hist_range=(-np.pi, np.pi),  xlabel= "Gen $\phi(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Gen_X_M",    bins=50, hist_range=(0, 12),          xlabel= "Gen $m_X$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_X_pt",   bins=30, hist_range=(0, 80),          xlabel=r"Gen p$_T$ X [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_X_eta",  bins=30, hist_range=(-4, 6),          xlabel=r"Gen $\eta(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_X_phi",  bins=30, hist_range=(-np.pi, np.pi),  xlabel=r"Gen $\phi(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Gen_X_M",    bins=50, hist_range=(0, 12),          xlabel=r"Gen $m_X$ [GeV]", save_as='png', scale='linear')
     ##
 
-    plot(data_per_mass, "nL1_muon", bins=10, hist_range=(0, 10),            xlabel= "Reco number of $\mu$", save_as='png', scale='linear')
+    plot(data_per_mass, "nL1_muon", bins=10, hist_range=(0, 10),            xlabel=r"Reco number of $\mu$", save_as='png', scale='linear')
 
-    plot(data_per_mass, "L1_muon_pt",  bins=30, hist_range=(0, 80),         xlabel= "L1 p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "L1_muon_eta", bins=30, hist_range=(-3, 3),         xlabel= "L1 $\eta(\mu)$", save_as='png', scale='linear')
-    plot(data_per_mass, "L1_muon_phi", bins=30, hist_range=(-np.pi, np.pi), xlabel= "L1 $\phi(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_muon_pt",  bins=30, hist_range=(0, 80),         xlabel=r"L1 p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_muon_eta", bins=30, hist_range=(-3, 3),         xlabel=r"L1 $\eta(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_muon_phi", bins=30, hist_range=(-np.pi, np.pi), xlabel=r"L1 $\phi(\mu)$", save_as='png', scale='linear')
 
-    plot(data_per_mass, "L1_X_pt",  bins=30, hist_range=(0, 80),         xlabel= "L1 p$_T$ X [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "L1_X_eta", bins=30, hist_range=(-3, 3),         xlabel= "L1 $\eta(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "L1_X_phi", bins=30, hist_range=(-np.pi, np.pi), xlabel= "L1 $\phi(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "L1_X_M",   bins=30, hist_range=(0, 15),         xlabel= "L1 $m_X$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_X_pt",  bins=30, hist_range=(0, 80),         xlabel=r"L1 p$_T$ X [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_X_eta", bins=30, hist_range=(-3, 3),         xlabel=r"L1 $\eta(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_X_phi", bins=30, hist_range=(-np.pi, np.pi), xlabel=r"L1 $\phi(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "L1_X_M",   bins=30, hist_range=(0, 15),         xlabel=r"L1 $m_X$ [GeV]", save_as='png', scale='linear')
 
     ##
-    plot(data_per_mass, "nReco_muon", bins=10, hist_range=(0, 10),          xlabel= "Reco number of $\mu$", save_as='png', scale='linear')
+    plot(data_per_mass, "nReco_muon", bins=10, hist_range=(0, 10),          xlabel=r"Reco number of $\mu$", save_as='png', scale='linear')
 
-    plot(data_per_mass, "Reco_muon_pt",  bins=30, hist_range=(0, 80),          xlabel= "Reco p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "Reco_muon_eta", bins=30, hist_range=(-3, 3),          xlabel= "Reco $\eta(\mu)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Reco_muon_phi", bins=30, hist_range=(-np.pi, np.pi),  xlabel= "Reco $\phi(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_muon_pt",  bins=30, hist_range=(0, 80),          xlabel=r"Reco p$_T$ $\mu$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_muon_eta", bins=30, hist_range=(-3, 3),          xlabel=r"Reco $\eta(\mu)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_muon_phi", bins=30, hist_range=(-np.pi, np.pi),  xlabel=r"Reco $\phi(\mu)$", save_as='png', scale='linear')
 
-    plot(data_per_mass, "Reco_X_pt",  bins=30, hist_range=(0, 80),          xlabel= "Reco p$_T$ X [GeV]", save_as='png', scale='linear')
-    plot(data_per_mass, "Reco_X_eta", bins=30, hist_range=(-3, 3),          xlabel= "Reco $\eta(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Reco_X_phi", bins=30, hist_range=(-np.pi, np.pi),  xlabel= "Reco $\phi(X)$", save_as='png', scale='linear')
-    plot(data_per_mass, "Reco_X_M",   bins=30, hist_range=(0, 15),          xlabel= "Reco $m_X$ [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_X_pt",  bins=30, hist_range=(0, 80),          xlabel=r"Reco p$_T$ X [GeV]", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_X_eta", bins=30, hist_range=(-3, 3),          xlabel=r"Reco $\eta(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_X_phi", bins=30, hist_range=(-np.pi, np.pi),  xlabel=r"Reco $\phi(X)$", save_as='png', scale='linear')
+    plot(data_per_mass, "Reco_X_M",   bins=30, hist_range=(0, 15),          xlabel=r"Reco $m_X$ [GeV]", save_as='png', scale='linear')
 
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_muon_dR", bins=30, hist_range=(0, 1),  xlabel= "Gen $\Delta R$ X [GeV]")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_pt",    bins=30, hist_range=(0, 80), xlabel= "Gen p$_T$ X [GeV]")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_eta",   bins=30, hist_range=(-4, 6), xlabel= "Gen $\eta(X)$")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_M",     bins=50, hist_range=(0, 12), xlabel= "Gen $m_X$ [GeV]")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_M",     bins=100, hist_range=(0, 15), xlabel= "Gen $m_X$ [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_muon_dR", bins=30, hist_range=(0, 1),  xlabel=r"Gen $\Delta R$ X [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_pt",    bins=30, hist_range=(0, 80), xlabel=r"Gen p$_T$ X [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_eta",   bins=30, hist_range=(-4, 6), xlabel=r"Gen $\eta(X)$")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_M",     bins=50, hist_range=(0, 12), xlabel=r"Gen $m_X$ [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Gen_X_M",     bins=100, hist_range=(0, 15), xlabel=r"Gen $m_X$ [GeV]")
 
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_muon_dR", bins=30, hist_range=(0, 1),  xlabel= "Reco $\Delta R$ X [GeV]")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_pt",    bins=30, hist_range=(0, 80), xlabel= "Reco p$_T$ X [GeV]")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_eta",   bins=30, hist_range=(-4, 6), xlabel= "Reco $\eta(X)$")
-    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_M",     bins=30, hist_range=(0, 15), xlabel= "Reco $m_X$ [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_muon_dR", bins=30, hist_range=(0, 1),  xlabel=r"Reco $\Delta R$ X [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_pt",    bins=30, hist_range=(0, 80), xlabel=r"Reco p$_T$ X [GeV]")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_eta",   bins=30, hist_range=(-4, 6), xlabel=r"Reco $\eta(X)$")
+    plot_comparison(data_per_mass, data_per_mass_NGT, data_per_mass_match, "Reco_X_M",     bins=30, hist_range=(0, 15), xlabel=r"Reco $m_X$ [GeV]")
 
-    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_pt",    bins=30, hist_range=(0, 80),          xlabel= "Gen p$_T$ X [GeV]",      eff_color="yellowgreen")
-    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_eta",   bins=30, hist_range=(-4, 6),          xlabel= "Gen $\eta(X)$",          eff_color="yellowgreen")
-    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_phi",   bins=30, hist_range=(-np.pi, np.pi),  xlabel= "Gen $\phi(X)$",          eff_color="yellowgreen")
-    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_M",     bins=30, hist_range=(2, 8),           xlabel= "Gen $m_X$ [GeV]",        eff_color="yellowgreen")
-    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_muon_dR", bins=30, hist_range=(0, 4),           xlabel= "Gen $\Delta R$ X [GeV]", eff_color="yellowgreen")
+    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_pt",    bins=30, hist_range=(0, 80),          xlabel=r"Gen p$_T$ X [GeV]",      eff_color="yellowgreen")
+    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_eta",   bins=30, hist_range=(-4, 6),          xlabel=r"Gen $\eta(X)$",          eff_color="yellowgreen")
+    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_phi",   bins=30, hist_range=(-np.pi, np.pi),  xlabel=r"Gen $\phi(X)$",          eff_color="yellowgreen")
+    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_X_M",     bins=30, hist_range=(2, 8),           xlabel=r"Gen $m_X$ [GeV]",        eff_color="yellowgreen")
+    plot_efficiency(6, data_per_mass, data_per_mass_NGT, "Gen_muon_dR", bins=30, hist_range=(0, 4),           xlabel=r"Gen $\Delta R$ X [GeV]", eff_color="yellowgreen")
 
-    plot_genVsReco(1, data_per_mass_match, "Gen_X_M", "Reco_X_M", bins=100, xlabel= "$m_X$ [GeV]")
+    plot_genVsReco(1, data_per_mass_match, "Gen_X_M", "Reco_X_M", bins=100, xlabel=r"$m_X$ [GeV]")
 
-    plot_fit(1, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
-    plot_fit(2, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
-    plot_fit(4, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
-    plot_fit(6, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
-    plot_fit(8, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
-    plot_fit(10, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel="$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(1, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(2, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(4, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(6, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(8, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
+    plot_fit(10, data_per_mass_match, "Gen_X_M",  bins=100,  xlabel=r"$m_X$ [GeV]", var_reco="Reco_X_M")
 
     plot_resolution(data_per_mass_match, "Gen_X_M", var_reco="Reco_X_M")
