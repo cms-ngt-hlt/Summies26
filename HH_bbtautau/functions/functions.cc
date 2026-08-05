@@ -40,9 +40,8 @@ int Get_H_idx(int pdg, const RVecI& pdgId, const RVecI& status, const RVecI& idx
 RVecI Get_b_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
 {
     RVecI result; // Returns a vector of size 2 that contains the two indices of the b quarks coming from the H decay
-    int n = pdgId.size();
 
-    for (int i = 0; i < n; i++) {
+    for (std::size_t i = 0; i < pdgId.size(); i++) {
         if (!(status[i] & (1 << 13))) continue;
         if (std::abs(pdgId[i]) != 5) continue;
              
@@ -96,9 +95,8 @@ RVecI Match_b_to_GenJet(const RVecI& gen_b_idx, const RVecF& GenPart_eta, const 
 RVecI Get_tau_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
 {
     RVecI result; // Returns a vector of size 2 that contains the two indices of the tau's coming from the H decay
-    int n = pdgId.size();
 
-    for (int i = 0; i < n; i++) {
+    for (std::size_t i = 0; i < pdgId.size(); i++) {
         if (!(status[i] & (1 << 13))) continue;
         if (std::abs(pdgId[i]) != 15) continue;
              
@@ -117,8 +115,7 @@ RVecI Get_tau_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVec
 
 int tau_decay_mode(int tau_i, const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
 {
-    int n = pdgId.size();
-    for (int i = 0; i < n; i++) {
+    for (std::size_t i = 0; i < pdgId.size(); i++) {
         if (idx_mother[i] != tau_i) continue;         // must be a direct daughter
         int pdg = std::abs(pdgId[i]);
         if (pdg == 11) return 0;                       // electron: leptonic e
@@ -238,6 +235,21 @@ RVecF Get_variable(const RVecI& indices, const RVecF& variable)
     }
     return result;
 }
+
+
+RVecI Get_lepton_idx(int pdg, const RVecI& pdgId, const RVecI& tau_i, const RVecI& status, const RVecI& idx_mother)
+{
+    RVecI result; // Returns a vector of size n that contains the indices of the muons coming from tau decay (we expect only one)
+
+    for (std::size_t i = 0; i < pdgId.size(); i++) {
+        if (!(status[i] & (1 << 13))) continue;
+        if (std::abs(pdgId[i]) != pdg) continue;     //Particle i must be a muon
+        if (idx_mother[i] != tau_i[0]) continue;    //Muon must be a direct daughter of tau
+        result.push_back(i);
+    }
+    return result;
+}
+
 //////////////////////////////////// RECO FUNCTIONS
 
 ROOT::RVec<PtEtaPhiMVector> get_4vector(const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& M)

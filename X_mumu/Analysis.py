@@ -429,6 +429,7 @@ if __name__ == '__main__':
         column = df.AsNumpy(to_plot)
         column_NGT = df_NGT.AsNumpy(to_plot)
         column_match = df_match.AsNumpy(to_plot)
+        
         data_per_mass[mass] = {variable: flatten(column[variable]) for variable in to_plot}
         data_per_mass_NGT[mass] = {variable: flatten(column_NGT[variable]) for variable in to_plot}
         data_per_mass_match[mass] = {variable: flatten(column_match[variable]) for variable in to_plot}
