@@ -58,7 +58,7 @@ RVecI Get_b_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVecI&
 }
 
 RVecI Match_b_to_GenJet(const RVecI& gen_b_idx, const RVecF& GenPart_eta, const RVecF& GenPart_phi,
-                         const RVecF& GenJet_eta, const RVecF& GenJet_phi)
+                         const RVecF& GenJet_eta, const RVecF& GenJet_phi, const RVecF& GenJet_pt)
 {
     RVecI matched_indices;
     std::vector<bool> genjet_used(GenJet_eta.size(), false);
@@ -82,13 +82,21 @@ RVecI Match_b_to_GenJet(const RVecI& gen_b_idx, const RVecF& GenPart_eta, const 
             if (current_dR < min_dR) { min_dR = current_dR; idx_genjet = j; }
         }
 
-        if (idx_genjet != -1 && min_dR <= 0.4) {   // AK4 cone size
+        if (idx_genjet != -1 && min_dR <= 0.4) {  
             matched_indices.push_back(idx_genjet);
             genjet_used[idx_genjet] = true;
         } else {
             matched_indices.push_back(-1);
         }
     }
+
+    std::sort(matched_indices.begin(), matched_indices.end(),
+              [&GenJet_pt](int a, int b) {
+                  if (a < 0) return false;      
+                  if (b < 0) return true;
+                  return GenJet_pt[a] > GenJet_pt[b];
+              });
+
     return matched_indices;
 }
 
@@ -112,6 +120,25 @@ RVecI Get_tau_from_H_indices(const RVecI& pdgId, const RVecI& status, const RVec
     return result;
 }
 
+
+ROOT::RVec<PtEtaPhiMVector> Get_b_p4(const RVecI& b_indices, const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
+{
+    ROOT::RVec<PtEtaPhiMVector> result;
+    for (std::size_t i = 0; i < b_indices.size(); i++) {
+        int idx = b_indices[i];
+        if (idx < 0) {
+            result.push_back(PtEtaPhiMVector(-999.f, -999.f, -999.f, -999.f));
+            continue;
+        }
+        result.push_back(PtEtaPhiMVector(pt.at(idx), eta.at(idx), phi.at(idx), mass.at(idx)));
+    }
+    std::sort(result.begin(), result.end(),
+              [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
+                  return a.Pt() > b.Pt();
+              });
+
+    return result;
+}
 
 int tau_decay_mode(int tau_i, const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother)
 {
@@ -139,6 +166,50 @@ int Get_tau_channel(const RVecI& tau_indices, const RVecI& pdgId, const RVecI& s
     return -1;                               // anything that's not mentioned above (e+e, e+mu...)
 }
 
+RVecI Get_taus(const RVecI& tau_indices, const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother){
+    RVecI results;
+
+    for (std::size_t i = 0; i < pdgId.size(); i++) {
+        if (std::abs(pdgId[i]) == 11 || std::abs(pdgId[i]) == 13){
+            if (idx_mother[i] == tau_indices[0]){
+                results.push_back(i);
+                results.push_back(tau_indices[1]);
+                break;
+            }
+            else if (idx_mother[i] == tau_indices[1]){
+                results.push_back(i);
+                results.push_back(tau_indices[0]);
+                break;
+            }
+        }
+        else {
+            continue;
+        }
+        // if (idx_mother[i] != tau_indices[0] && idx_mother[i] != tau_indices[1]) continue;
+    }
+    if (results.size() > 0) return results;
+    return tau_indices;                                        
+}
+
+
+ROOT::RVec<PtEtaPhiMVector> Get_all_taus_p4(const RVecI& tau_indices, const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
+{
+    ROOT::RVec<PtEtaPhiMVector> result;
+    for (std::size_t i = 0; i < tau_indices.size(); i++) {
+        int idx = tau_indices[i];
+        if (idx < 0) {
+            result.push_back(PtEtaPhiMVector(-999.f, -999.f, -999.f, -999.f));
+            continue;
+        }
+        result.push_back(PtEtaPhiMVector(pt.at(idx), eta.at(idx), phi.at(idx), mass.at(idx)));
+    }
+    std::sort(result.begin(), result.end(),
+              [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
+                  return a.Pt() > b.Pt();
+              });
+
+    return result;
+}
 
 void collect_visible_daughters(int idx, const RVecI& pdgId, const RVecI& idx_mother, std::vector<int>& result)
 {
@@ -149,7 +220,8 @@ void collect_visible_daughters(int idx, const RVecI& pdgId, const RVecI& idx_mot
 
         int abs_pdg = std::abs(pdgId[j]);
         if (abs_pdg == 12 || abs_pdg == 14 || abs_pdg == 16 || abs_pdg == 18) continue; 
-        collect_visible_daughters(j, pdgId, idx_mother, result);      
+
+        collect_visible_daughters(j, pdgId, idx_mother, result);
     }
 
     if (!has_daughter) {
@@ -159,19 +231,6 @@ void collect_visible_daughters(int idx, const RVecI& pdgId, const RVecI& idx_mot
     }
 }
 
-ROOT::RVec<PtEtaPhiMVector> Get_b_p4(const RVecI& b_indices, const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
-{
-    ROOT::RVec<PtEtaPhiMVector> result;
-    for (std::size_t i = 0; i < b_indices.size(); i++) {
-        int idx = b_indices[i];
-        if (idx < 0) {
-            result.push_back(PtEtaPhiMVector(-999.f, -999.f, -999.f, -999.f));
-            continue;
-        }
-        result.push_back(PtEtaPhiMVector(pt.at(idx), eta.at(idx), phi.at(idx), mass.at(idx)));
-    }
-    return result;
-}
 
 PtEtaPhiMVector Get_visible_tau_p4(int tau_idx, const RVecI& pdgId, const RVecI& idx_mother,
                                     const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
@@ -195,6 +254,11 @@ ROOT::RVec<PtEtaPhiMVector> Get_visible_tau_p4s(const RVecI& tau_indices, const 
     ROOT::RVec<PtEtaPhiMVector> result;
     for (std::size_t i = 0; i < tau_indices.size(); i++)
         result.push_back(Get_visible_tau_p4(tau_indices[i], pdgId, idx_mother, pt, eta, phi, mass));
+    
+    std::sort(result.begin(), result.end(),
+            [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
+                return a.Pt() > b.Pt();
+            });
     return result;
 }
 
@@ -244,7 +308,7 @@ RVecI Get_lepton_idx(int pdg, const RVecI& pdgId, const RVecI& tau_i, const RVec
     for (std::size_t i = 0; i < pdgId.size(); i++) {
         if (!(status[i] & (1 << 13))) continue;
         if (std::abs(pdgId[i]) != pdg) continue;     //Particle i must be a muon
-        if (idx_mother[i] != tau_i[0]) continue;    //Muon must be a direct daughter of tau
+        if (idx_mother[i] != tau_i[0] && idx_mother[i] != tau_i[1]) continue;    //Muon must be a direct daughter of tau
         result.push_back(i);
     }
     return result;
@@ -272,7 +336,7 @@ float get_ID_threshold(const float pt)
 }
 
 
-RVecI deltaR_matching(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi, const RVecF& reco_pt, const RVecF& reco_eta, const RVecF& reco_phi, const RVecF& TauVSjet)
+RVecI deltaR_matching(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi, const RVecF& reco_pt, const RVecF& reco_eta, const RVecF& reco_phi, const RVecF& TauVSjet, bool use_tagging)
 {
     RVecI matched_indices;
     std::vector<bool> reco_used(reco_pt.size(), false);
@@ -286,7 +350,9 @@ RVecI deltaR_matching(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& ge
         for (std::size_t j = 0; j < reco_pt.size(); j++){
             if (reco_used[j]) continue;
             float id_threshold = get_ID_threshold(reco_pt[j]);
-            if (TauVSjet[j] < id_threshold) continue;
+            if (use_tagging){
+                if (TauVSjet[j] < id_threshold) continue;
+            }
 
             double D_eta = gen_eta[i] - reco_eta[j];
             double D_phi = gen_phi[i] - reco_phi[j];
@@ -307,9 +373,42 @@ RVecI deltaR_matching(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& ge
     return matched_indices;
 }
 
+RVecI deltaR_matching_lepton(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi, const RVecF& reco_pt, const RVecF& reco_eta, const RVecF& reco_phi)
+{
+    RVecI matched_indices;
+    std::vector<bool> reco_used(reco_pt.size(), false);
+
+    for (std::size_t i = 0; i < gen_pt.size(); i++){
+        if (gen_pt[i] < 0) {matched_indices.push_back(-1); continue;}
+
+        double min_dR = 999.0;
+        int idx_reco_lep = -1;
+
+        for (std::size_t j = 0; j < reco_pt.size(); j++){
+            if (reco_used[j]) continue;
+
+            double D_eta = gen_eta[i] - reco_eta[j];
+            double D_phi = gen_phi[i] - reco_phi[j];
+            while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;
+            while (D_phi < -M_PI) D_phi += 2.0 * M_PI;
+
+            double current_dR = std::sqrt(D_eta*D_eta + D_phi*D_phi);
+            if (current_dR < min_dR) {min_dR = current_dR; idx_reco_lep = j;}
+        }
+
+        if (idx_reco_lep != -1 && min_dR <= 0.3) {
+            matched_indices.push_back(idx_reco_lep);
+            reco_used[idx_reco_lep] = true;
+        } else {
+            matched_indices.push_back(-1);
+        }
+    }
+    return matched_indices;
+}
+
 
 RVecI deltaR_matching_jets(const RVecI& gen_b_idx, const RVecF& Gen_eta, const RVecF& Gen_phi, const RVecF& reco_eta, const RVecF& reco_phi,
-                            const RVecF& prob_b, const RVecF& prob_bb, const RVecF& prob_c, const RVecF& prob_g, const RVecF& prob_lepb, const RVecF& prob_uds)
+                            const RVecF& prob_b, const RVecF& prob_bb, const RVecF& prob_c, const RVecF& prob_g, const RVecF& prob_lepb, const RVecF& prob_uds, bool use_tagging)
 {
     RVecI matched_indices;
     std::vector<bool> reco_used(reco_eta.size(), false);
@@ -326,7 +425,9 @@ RVecI deltaR_matching_jets(const RVecI& gen_b_idx, const RVecF& Gen_eta, const R
             float total_prob = prob_b[j] + prob_bb[j] + prob_c[j] + prob_g[j] + prob_lepb[j] + prob_uds[j];
             if (total_prob == 0) continue;
             float b_disc = (prob_b[j] + prob_bb[j] + prob_lepb[j]) / total_prob;
-            // if (b_disc < 0.92) continue;
+            if (use_tagging){
+                if (b_disc < 0.92) continue;
+            }
 
             double D_eta = Gen_eta[idx_gen] - reco_eta[j];
             double D_phi = Gen_phi[idx_gen] - reco_phi[j];

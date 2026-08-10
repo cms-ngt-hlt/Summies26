@@ -25,7 +25,7 @@ shutil.copy2(SRC, TMP)
 ROOT.gSystem.AddIncludePath(f"-I{HDR_DIR}")
 ROOT.gROOT.ProcessLine(f".L {TMP}+")
 
-#-------------------------Functions------------------------------------
+#───────────────────────────────────────────────────────────────── Functions ────────────────────────────────────────────────────────────────────────────────
 
 def get_leg_arrays(df_in, colnames):
     """Pull columns out of the RDataFrame. Vector-per-event columns are
@@ -50,53 +50,90 @@ def eff_and_err(num, den):
     err = np.array([np.sqrt(e * (1 - e) / d) if d > 0 else 0.0 for e, d in zip(eff, den)])
     return eff, err
 
-#─────────────────────────────────────── Get dataframe ────────────────────────────────────────
+#────────────────────────────────────────────────────────────────── Get dataframe ────────────────────────────────────────────────────────────────────────────────
 
 df = ROOT.RDataFrame("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_ngt_hlt.root")
 
-    #─────────────────────────────────────── Define variables ────────────────────────────────────────
+    #────────────────────────────────────────────────────────────── Define variables ────────────────────────────────────────────────────────────────────────────────
 
 df = (
     df
-    #-------------- Gen -------------------
+    #─────────────────────────────────────────────────────────────────── Gen ────────────────────────────────────────────────────────────────────────────────
 
-    .Define("Gen_b_idx",             f"Get_b_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
-    .Define("Gen_bJets_idx",         f"Match_b_to_GenJet(Gen_b_idx, GenPart_eta, GenPart_phi, GenJet_eta, GenJet_phi)")
+    .Define("Gen_b_idx",      f"Get_b_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
+    .Define("Gen_bJets_idx",  f"Match_b_to_GenJet(Gen_b_idx, GenPart_eta, GenPart_phi, GenJet_eta, GenJet_phi, GenJet_pt)")
 
-    .Define("Gen_b_p4",              f"Get_b_p4(Gen_b_idx, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
-    .Define("Gen_bjet_p4",           f"Get_b_p4(Gen_bJets_idx, GenJet_pt, GenJet_eta, GenJet_phi, GenJet_mass)")
+    .Define("Gen_b_p4",       f"Get_b_p4(Gen_b_idx, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
+    .Define("Gen_bjet_p4",    f"Get_b_p4(Gen_bJets_idx, GenJet_pt, GenJet_eta, GenJet_phi, GenJet_mass)")
 
-    .Define("Gen_bjet_pt",           f"Get_p4_pt(Gen_bjet_p4)")
-    .Define("Gen_bjet_eta",          f"Get_p4_eta(Gen_bjet_p4)")
-    .Define("Gen_bjet_phi",          f"Get_p4_phi(Gen_bjet_p4)")
-    .Define("Gen_bjet_mass",         f"Get_p4_mass(Gen_bjet_p4)")
+    .Define("Gen_b_leading_jet_pt",       f"(Gen_bjet_p4[0].pt())")
+    .Define("Gen_b_leading_jet_eta",      f"(Gen_bjet_p4[0].eta())")
+    .Define("Gen_b_leading_jet_phi",      f"(Gen_bjet_p4[0].phi())")
+    .Define("Gen_b_leading_jet_mass",     f"(Gen_bjet_p4[0].M())")
 
-    .Define("Gen_H_bb_mass",         f"Get_Gen_H_tautau_mass(Gen_b_p4)") 
-    .Define("Gen_H_bbjet_mass",      f"Get_Gen_H_tautau_mass(Gen_bjet_p4)") 
+    .Define("Gen_b_subleading_jet_pt",    f"(Gen_bjet_p4[1].pt())")
+    .Define("Gen_b_subleading_jet_eta",   f"(Gen_bjet_p4[1].eta())")
+    .Define("Gen_b_subleading_jet_phi",   f"(Gen_bjet_p4[1].phi())")
+    .Define("Gen_b_subleading_jet_mass",  f"(Gen_bjet_p4[1].M())")
 
-    .Define("Gen_tau_idx",           f"Get_tau_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
-    .Define("tau_channel",           f"Get_tau_channel(Gen_tau_idx, GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
-
-    .Define("Gen_tau_p4",            f"Get_visible_tau_p4s(Gen_tau_idx, GenPart_pdgId, GenPart_genPartIdxMother, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
-    .Define("Gen_tau_pt",            f"Get_p4_pt(Gen_tau_p4)")
-    .Define("Gen_tau_eta",           f"Get_p4_eta(Gen_tau_p4)")
-    .Define("Gen_tau_phi",           f"Get_p4_phi(Gen_tau_p4)")
-    .Define("Gen_tau_mass",          f"Get_p4_mass(Gen_tau_p4)")
-
-    .Define("Gen_Muon_idx",          f"Get_lepton_idx(13, GenPart_pdgId, Gen_tau_idx, GenPart_statusFlags, GenPart_genPartIdxMother)")
-    .Define("nGen_Muon",             f"Gen_Muon_idx.size()")
-
-    .Define("Gen_Electron_idx",      f"Get_lepton_idx(11, GenPart_pdgId, Gen_tau_idx, GenPart_statusFlags, GenPart_genPartIdxMother)")
-    .Define("nGen_Electron",         f"Gen_Electron_idx.size()")
+    .Define("Gen_H_bb_mass",      f"Get_Gen_H_tautau_mass(Gen_b_p4)") 
+    .Define("Gen_H_bbjet_mass",   f"Get_Gen_H_tautau_mass(Gen_bjet_p4)") 
 
 
-    .Define("Gen_H_tautau_mass",     f"Get_Gen_H_tautau_mass(Gen_tau_p4)")
 
-    .Define("Gen_HH_mass",           f"Get_gen_mHH(Gen_tau_p4, Gen_b_p4)") 
+    .Define("Gen_taus_idx",       f"Get_tau_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
+    .Define("Gen_tau_idx",        f"Get_taus(Gen_taus_idx, GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
     
-    #-------------- Reco -------------------
+    .Define("tau_channel",        f"Get_tau_channel(Gen_taus_idx, GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)")
+    .Define("tau_first_pdg",      f"GenPart_pdgId[Gen_tau_idx[0]]")
+    .Define("tau_2nd_pdg",        f"GenPart_pdgId[Gen_tau_idx[1]]")
+    
+    .Define("Gen_tau_p4",         f"Get_visible_tau_p4s(Gen_tau_idx, GenPart_pdgId, GenPart_genPartIdxMother, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
+    .Define("Gen_tau_pt",         f"Get_p4_pt(Gen_tau_p4)")
+    .Define("Gen_tau_eta",        f"Get_p4_eta(Gen_tau_p4)")
+    .Define("Gen_tau_phi",        f"Get_p4_phi(Gen_tau_p4)")
+    .Define("Gen_tau_mass",       f"Get_p4_mass(Gen_tau_p4)")
 
-    .Define("Matched_tau_idx",       f"deltaR_matching(Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_deepTauVSjet)")
+    .Define("Gen_tau_all_p4",         f"Get_all_taus_p4(Gen_tau_idx, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
+    .Define("Gen_tau_all_pt",         f"Get_p4_pt(Gen_tau_all_p4)")
+    .Define("Gen_tau_all_eta",        f"Get_p4_eta(Gen_tau_all_p4)")
+    .Define("Gen_tau_all_phi",        f"Get_p4_phi(Gen_tau_all_p4)")
+    .Define("Gen_tau_all_mass",       f"Get_p4_mass(Gen_tau_all_p4)")
+
+    .Define("Gen_tau_leading_pt",         f"Gen_tau_p4[0].pt()")
+    .Define("Gen_tau_leading_eta",        f"Gen_tau_p4[0].eta()")
+    .Define("Gen_tau_leading_phi",        f"Gen_tau_p4[0].phi()")
+    .Define("Gen_tau_leading_mass",       f"Gen_tau_p4[0].M()")
+
+    .Define("Gen_tau_subleading_pt",      f"Gen_tau_p4[1].pt()")
+    .Define("Gen_tau_subleading_eta",     f"Gen_tau_p4[1].eta()")
+    .Define("Gen_tau_subleading_phi",     f"Gen_tau_p4[1].phi()")
+    .Define("Gen_tau_subleading_mass",    f"Gen_tau_p4[1].M()")
+
+    .Define("Gen_Muon_idx",       f"Get_lepton_idx(13, GenPart_pdgId, Gen_taus_idx, GenPart_statusFlags, GenPart_genPartIdxMother)")
+    .Define("nGen_Muon",          f"Gen_Muon_idx.size()")
+    
+    .Define("Gen_muon_pt",        f"Get_variable(Gen_Muon_idx, GenPart_pt)")
+    .Define("Gen_muon_eta",       f"Get_variable(Gen_Muon_idx, GenPart_eta)")
+    .Define("Gen_muon_phi",       f"Get_variable(Gen_Muon_idx, GenPart_phi)")
+    .Define("Gen_muon_mass",      f"Get_variable(Gen_Muon_idx, GenPart_mass)")
+
+    .Define("Gen_Electron_idx",   f"Get_lepton_idx(11, GenPart_pdgId, Gen_taus_idx, GenPart_statusFlags, GenPart_genPartIdxMother)")
+    .Define("nGen_Electron",      f"Gen_Electron_idx.size()")
+
+    .Define("Gen_electron_pt",    f"Get_variable(Gen_Electron_idx, GenPart_pt)")
+    .Define("Gen_electron_eta",   f"Get_variable(Gen_Electron_idx, GenPart_eta)")
+    .Define("Gen_electron_phi",   f"Get_variable(Gen_Electron_idx, GenPart_phi)")
+    .Define("Gen_electron_mass",  f"Get_variable(Gen_Electron_idx, GenPart_mass)")
+   
+    .Define("Gen_H_tautau_mass",  f"Get_Gen_H_tautau_mass(Gen_tau_all_p4)")
+
+    .Define("Gen_HH_mass",        f"Get_gen_mHH(Gen_tau_p4, Gen_b_p4)") 
+    
+   # ───────────────────────────────────────────────────────────────────── Reco ────────────────────────────────────────────────────────────────────────────────
+
+    .Define("Matched_tau_idx",              f"deltaR_matching(Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_deepTauVSjet, false)")
+    .Define("Matched_tagged_tau_idx",       f"deltaR_matching(Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_deepTauVSjet, true)")
 
     .Define("Reco_tau_pt",           "Get_variable(Matched_tau_idx, hltHpsPFTau_pt)")
     .Define("Reco_tau_eta",          "Get_variable(Matched_tau_idx, hltHpsPFTau_eta)")
@@ -104,14 +141,74 @@ df = (
     .Define("Reco_tau_mass",         "Get_variable(Matched_tau_idx, hltHpsPFTau_mass)")
     .Define("Reco_tau_DR",           "Get_dR_tau(Gen_tau_p4, Matched_tau_idx, hltHpsPFTau_eta, hltHpsPFTau_phi)")
 
-    .Define("Matched_jet_idx",       "deltaR_matching_jets(Gen_bJets_idx, GenJet_eta, GenJet_phi, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi, hltAK4PuppiJet_DeepFlavour_prob_b, hltAK4PuppiJet_DeepFlavour_prob_bb, hltAK4PuppiJet_DeepFlavour_prob_c, hltAK4PuppiJet_DeepFlavour_prob_g, hltAK4PuppiJet_DeepFlavour_prob_lepb, hltAK4PuppiJet_DeepFlavour_prob_uds)")
+    .Define("Reco_leading_tau_pt",    "Reco_tau_pt[0]")
+    .Define("Reco_leading_tau_eta",   "Reco_tau_eta[0]")
+    .Define("Reco_leading_tau_phi",   "Reco_tau_phi[0]")   
+    .Define("Reco_leading_tau_mass",  "Reco_tau_mass[0]")   
+    .Define("Reco_leading_tau_DR",    "Reco_tau_DR[0]") 
 
+    .Define("Reco_subleading_tau_pt",    "Reco_tau_pt[1]")
+    .Define("Reco_subleading_tau_eta",   "Reco_tau_eta[1]")
+    .Define("Reco_subleading_tau_phi",   "Reco_tau_phi[1]")   
+    .Define("Reco_subleading_tau_mass",  "Reco_tau_mass[1]")   
+    .Define("Reco_subleading_tau_DR",    "Reco_tau_DR[1]") 
+
+    .Define("Reco_tagged_tau_pt",           "Get_variable(Matched_tagged_tau_idx, hltHpsPFTau_pt)")
+    .Define("Reco_tagged_tau_eta",          "Get_variable(Matched_tagged_tau_idx, hltHpsPFTau_eta)")
+    .Define("Reco_tagged_tau_phi",          "Get_variable(Matched_tagged_tau_idx, hltHpsPFTau_phi)")
+    .Define("Reco_tagged_tau_mass",         "Get_variable(Matched_tagged_tau_idx, hltHpsPFTau_mass)")
+    .Define("Reco_tagged_tau_DR",           "Get_dR_tau(Gen_tau_p4, Matched_tagged_tau_idx, hltHpsPFTau_eta, hltHpsPFTau_phi)")
+
+    .Define("Reco_leading_tagged_tau_pt",    "Reco_tagged_tau_pt[0]")
+    .Define("Reco_leading_tagged_tau_eta",   "Reco_tagged_tau_eta[0]")
+    .Define("Reco_leading_tagged_tau_phi",   "Reco_tagged_tau_phi[0]")   
+    .Define("Reco_leading_tagged_tau_mass",  "Reco_tagged_tau_mass[0]")   
+    .Define("Reco_leading_tagged_tau_DR",    "Reco_tagged_tau_DR[0]") 
+
+    .Define("Reco_subleading_tagged_tau_pt",    "Reco_tagged_tau_pt[1]")
+    .Define("Reco_subleading_tagged_tau_eta",   "Reco_tagged_tau_eta[1]")
+    .Define("Reco_subleading_tagged_tau_phi",   "Reco_tagged_tau_phi[1]")   
+    .Define("Reco_subleading_tagged_tau_mass",  "Reco_tagged_tau_mass[1]")   
+    .Define("Reco_subleading_tagged_tau_DR",    "Reco_tagged_tau_DR[1]")    
+
+    .Define("Matched_jet_idx",       "deltaR_matching_jets(Gen_bJets_idx, GenJet_eta, GenJet_phi, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi, hltAK4PuppiJet_DeepFlavour_prob_b, hltAK4PuppiJet_DeepFlavour_prob_bb, hltAK4PuppiJet_DeepFlavour_prob_c, hltAK4PuppiJet_DeepFlavour_prob_g, hltAK4PuppiJet_DeepFlavour_prob_lepb, hltAK4PuppiJet_DeepFlavour_prob_uds, false)")
+    .Define("Matched_bjet_idx",      "deltaR_matching_jets(Gen_bJets_idx, GenJet_eta, GenJet_phi, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi, hltAK4PuppiJet_DeepFlavour_prob_b, hltAK4PuppiJet_DeepFlavour_prob_bb, hltAK4PuppiJet_DeepFlavour_prob_c, hltAK4PuppiJet_DeepFlavour_prob_g, hltAK4PuppiJet_DeepFlavour_prob_lepb, hltAK4PuppiJet_DeepFlavour_prob_uds, true)")
+    
     .Define("Matched_jet_bscore",    "Get_bscore(Gen_bJets_idx, hltAK4PuppiJet_DeepFlavour_prob_b, hltAK4PuppiJet_DeepFlavour_prob_bb, hltAK4PuppiJet_DeepFlavour_prob_c, hltAK4PuppiJet_DeepFlavour_prob_g, hltAK4PuppiJet_DeepFlavour_prob_lepb, hltAK4PuppiJet_DeepFlavour_prob_uds)")
+    
     .Define("Reco_jet_pT",           "Get_variable(Matched_jet_idx, hltAK4PuppiJet_pt)")
     .Define("Reco_jet_eta",          "Get_variable(Matched_jet_idx, hltAK4PuppiJet_eta)")
     .Define("Reco_jet_phi",          "Get_variable(Matched_jet_idx, hltAK4PuppiJet_phi)")
     .Define("Reco_jet_mass",         "Get_variable(Matched_jet_idx, hltAK4PuppiJet_mass)")
     .Define("Reco_jet_DR",           "Get_dR_jet(Gen_bJets_idx, Matched_jet_idx, GenJet_eta, GenJet_phi, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi)")
+
+    .Define("Reco_leading_jet_pT",   "Reco_jet_pT[0]")
+    .Define("Reco_leading_jet_eta",  "Reco_jet_eta[0]")
+    .Define("Reco_leading_jet_phi",  "Reco_jet_phi[0]")
+    .Define("Reco_leading_jet_mass", "Reco_jet_mass[0]")
+    
+    .Define("Reco_subleading_jet_pT",   "Reco_jet_pT[1]")
+    .Define("Reco_subleading_jet_eta",  "Reco_jet_eta[1]")
+    .Define("Reco_subleading_jet_phi",  "Reco_jet_phi[1]")
+    .Define("Reco_subleading_jet_mass", "Reco_jet_mass[1]")
+
+
+    .Define("Reco_bjet_pT",           "Get_variable(Matched_bjet_idx, hltAK4PuppiJet_pt)")
+    .Define("Reco_bjet_eta",          "Get_variable(Matched_bjet_idx, hltAK4PuppiJet_eta)")
+    .Define("Reco_bjet_phi",          "Get_variable(Matched_bjet_idx, hltAK4PuppiJet_phi)")
+    .Define("Reco_bjet_mass",         "Get_variable(Matched_bjet_idx, hltAK4PuppiJet_mass)")
+    .Define("Reco_bjet_DR",           "Get_dR_jet(Gen_bJets_idx, Matched_bjet_idx, GenJet_eta, GenJet_phi, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi)")
+
+    .Define("Reco_leading_bjet_pT",   "Reco_bjet_pT[0]")
+    .Define("Reco_leading_bjet_eta",  "Reco_bjet_eta[0]")
+    .Define("Reco_leading_bjet_phi",  "Reco_bjet_phi[0]")
+    .Define("Reco_leading_bjet_mass", "Reco_bjet_mass[0]")
+    
+    .Define("Reco_subleading_bjet_pT",   "Reco_bjet_pT[1]")
+    .Define("Reco_subleading_bjet_eta",  "Reco_bjet_eta[1]")
+    .Define("Reco_subleading_bjet_phi",  "Reco_bjet_phi[1]")
+    .Define("Reco_subleading_bjet_mass", "Reco_bjet_mass[1]")
+
 
     .Define("Reco_H_tautau_p4",      "Build_Higgs_p4(Matched_tau_idx, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_mass)")
     .Define("Reco_H_tautau_mass",    "Get_Higgs_mass(Reco_H_tautau_p4)")
@@ -119,10 +216,17 @@ df = (
     .Define("Reco_H_bb_p4",          "Build_Higgs_p4(Matched_jet_idx, hltAK4PuppiJet_pt, hltAK4PuppiJet_eta, hltAK4PuppiJet_phi, hltAK4PuppiJet_mass)")
     .Define("Reco_H_bb_mass",        "Get_Higgs_mass(Reco_H_bb_p4)")
 
-    .Define("Reco_HH_mass",          "Get_mHH(Reco_H_tautau_p4, Reco_H_bb_p4)")    
+    .Define("Reco_HH_mass",          "Get_mHH(Reco_H_tautau_p4, Reco_H_bb_p4)")   
+
+    .Define("Matched_muon_idx",     f"deltaR_matching_lepton(Gen_muon_pt, Gen_muon_eta, Gen_muon_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi)")
+    .Define("Matched_electron_idx", f"deltaR_matching_lepton(Gen_electron_pt, Gen_electron_eta, Gen_electron_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi)")
+ 
+    .Define("Reco_electron_pt",      "Get_variable(Matched_electron_idx, hltElectron_pt)")
+    .Define("Reco_muon_pt",          "Get_variable(Matched_muon_idx, hltMuon_pt)")
+
 )
 
-#─────────────────────────────────────── Print column names ────────────────────────────────────────
+#─────────────────────────────────────────────────────────────────── Print column names ────────────────────────────────────────────────────────────────────────────────
 
 # all_cols = [str(c) for c in df.GetColumnNames()]
 # L1_cols = [c for c in all_cols if "L1_p" in c]
@@ -130,12 +234,9 @@ df = (
 # for c in sorted(L1_cols):
     # print(f"  {c}  [{df.GetColumnType(c)}]")
 
-#─────────────────────────────────────── Filter dataframe ────────────────────────────────────────
-df_NGT = df.Filter("tau_channel >= 0 && DST_PFScouting == true")
- 
-# One dict keyed by channel index holds everything that used to live in
-# three separate dicts (channel filter, suffix, and title), so they can
-# never drift out of sync with each other.
+df.Display(["tau_channel", "tau_first_pdg", "tau_2nd_pdg"], 50).Print()
+
+#──────────────────────────────────────────────────────────────────── Filter dataframe ────────────────────────────────────────────────────────────────────────────────
 channels = {
     0: {"filter": "tau_channel == 0", "suffix": "e", "title": r"$\tau \tau \to \tau_e \tau_h$"},
     1: {"filter": "tau_channel == 1", "suffix": "m", "title": r"$\tau \tau \to \tau_{\mu} \tau_h$"},
@@ -154,24 +255,84 @@ streams = {
 "NGT_h":    channel[2].Filter("DST_PFScouting == true"),
 }
 
-ReconstructedTau =  {idx: channel[0].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0") for idx, cfg in channel.items()} 
-ReconstructedJet =  {idx: channel[1].Filter("DST_PFScouting == true").Filter("Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0") for idx, cfg in channel.items()} 
-ReconstructedBoth = {idx: channel[2].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0 && Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0") for idx, cfg in channel.items()} 
-# ─────────────────────────────────────── Define and plot histograms 1D ────────────────────────────────────────    
+streams_reco = {
+    "Reco_tau_e": channel[0].Filter("DST_PFScouting == true").Filter("(Matched_tau_idx[0] >= 0 || Matched_tau_idx[1] >= 0) && Matched_electron_idx[0] >= 0"),
+    "Reco_tau_m": channel[1].Filter("DST_PFScouting == true").Filter("(Matched_tau_idx[0] >= 0 || Matched_tau_idx[1] >= 0) && Matched_muon_idx[0] >= 0"),
+    "Reco_tau_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0"),
+    
+
+    "Reco_jet_e": channel[0].Filter("DST_PFScouting == true").Filter("Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+    "Reco_jet_m": channel[1].Filter("DST_PFScouting == true").Filter("Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+    "Reco_jet_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+
+    "Reco_both_e": channel[0].Filter("DST_PFScouting == true").Filter("(Matched_tau_idx[0] >= 0 || Matched_tau_idx[1] >= 0) && Matched_electron_idx[0] >= 0 && Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+    "Reco_both_m": channel[1].Filter("DST_PFScouting == true").Filter("(Matched_tau_idx[0] >= 0 || Matched_tau_idx[1] >= 0) && Matched_muon_idx[0] >= 0 && Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+    "Reco_both_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0 && Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
+
+##Tagging
+
+    "Reco_tagged_tau_e": channel[0].Filter("DST_PFScouting == true").Filter("(Matched_tagged_tau_idx[0] >= 0 || Matched_tagged_tau_idx[1] >= 0) && Matched_electron_idx[0] >= 0"),
+    "Reco_tagged_tau_m": channel[1].Filter("DST_PFScouting == true").Filter("(Matched_tagged_tau_idx[0] >= 0 || Matched_tagged_tau_idx[1] >= 0) && Matched_muon_idx[0] >= 0"),
+    "Reco_tagged_tau_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_tagged_tau_idx[0] >= 0 && Matched_tagged_tau_idx[1] >= 0"),
+    
+
+    "Reco_bjet_e": channel[0].Filter("DST_PFScouting == true").Filter("Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+    "Reco_bjet_m": channel[1].Filter("DST_PFScouting == true").Filter("Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+    "Reco_bjet_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+
+    "Reco_both_tagged_e": channel[0].Filter("DST_PFScouting == true").Filter("(Matched_tagged_tau_idx[0] >= 0 || Matched_tagged_tau_idx[1] >= 0) && Matched_electron_idx[0] >= 0 && Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+    "Reco_both_tagged_m": channel[1].Filter("DST_PFScouting == true").Filter("(Matched_tagged_tau_idx[0] >= 0 || Matched_tagged_tau_idx[1] >= 0) && Matched_muon_idx[0] >= 0 && Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+    "Reco_both_tagged_h": channel[2].Filter("DST_PFScouting == true").Filter("Matched_tagged_tau_idx[0] >= 0 && Matched_tagged_tau_idx[1] >= 0 && Matched_bjet_idx[0] >= 0 && Matched_bjet_idx[1] >= 0"),
+
+}
+
+# ────────────────────────────────────────────────────────────── Define histograms  ────────────────────────────────────────────────────────────────────────────────    
  
 var_configs = {
-    "Gen_tau_pt":     {"branch": "Gen_tau_pt",   "xlabel": r"$p_{T}(\tau)$ [GeV]", "bins": 30, "range": (0, 300)},
-    "Gen_tau_eta":    {"branch": "Gen_tau_eta",  "xlabel": r"$\eta(\tau)$",        "bins": 30, "range": (-3, 3)},
-    "bscore":         {"branch": "Matched_jet_bscore", "xlabel": r"$b-score$",     "bins": 30, "range": (0, 1)},
+    # "Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
+    
+    # "Reco_tau_DR": {"branch": "Reco_tau_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
+    # "Reco_jet_DR": {"branch": "Reco_jet_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
+    
+    "Gen_tau_pt":      {"branch": "Gen_tau_pt",      "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
+    "Gen_tau_all_pt":  {"branch": "Gen_tau_all_pt",  "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
+
+    "Gen_tau_leading_pt":     {"branch": "Gen_tau_leading_pt",     "xlabel": r"Gen $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
+    "Gen_tau_subleading_pt":  {"branch": "Gen_tau_subleading_pt",  "xlabel": r"Gen $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
+    
+    "Gen_tau_leading_eta":    {"branch": "Gen_tau_leading_eta",    "xlabel": r"Gen $\eta(\tau)$ Leading",    "bins": 30, "range": (-3, 3)},
+    "Gen_tau_subleading_eta": {"branch": "Gen_tau_subleading_eta", "xlabel": r"Gen $\eta(\tau)$ Subleading", "bins": 30, "range": (-3, 3)},
+    
+    "bscore":          {"branch": "Matched_jet_bscore", "xlabel": r"$b-score$",    "bins": 30, "range": (0, 1)},
 
     "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$",       "bins": 4, "range": (-0.5, 3.5)},
     "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",         "bins": 4, "range": (-0.5, 3.5)},
     
-    "Gen_bjet_pt":     {"branch": "Gen_bjet_pt",   "xlabel": r"$p_{T}$ Jet [GeV]", "bins": 30, "range": (0, 300)},
-    "Gen_bjet_eta":    {"branch": "Gen_bjet_eta",  "xlabel": r"$\eta$ Jet",        "bins": 30, "range": (-3, 3)},
+    "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet [GeV]",   "bins": 30, "range": (0, 300)},
+    "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet [GeV]","bins": 30, "range": (0, 300)},
     
-    "Reco_jet_pT":     {"branch": "Reco_jet_pT",   "xlabel": r"$p_{T}$ Jet [GeV]", "bins": 30, "range": (0, 300)},
-    "Reco_jet_eta":    {"branch": "Reco_jet_eta",  "xlabel": r"$\eta$ Jet",        "bins": 30, "range": (-3, 3)},
+    "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
+    "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
+    
+    "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ [GeV]",   "bins": 30, "range": (0, 200)},
+    "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ [GeV]", "bins": 30, "range": (0, 200)},
+
+    "Gen_H_tautau_mass":       {"branch": "Gen_H_tautau_mass",     "xlabel": r"Gen $m_H$ [GeV]",  "bins": 30, "range": (110, 140)},
+
+
+
+    "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
+    "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
+
+    "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
+    "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
+    
+    "Reco_leading_jet_eta":    {"branch": "Reco_leading_jet_eta",    "xlabel": r"Reco $\eta$ Leading jet",    "bins": 30, "range": (-3, 3)},
+    "Reco_subleading_jet_eta": {"branch": "Reco_subleading_jet_eta", "xlabel": r"Reco $\eta$ Subleading jet", "bins": 30, "range": (-3, 3)},
+    
+    "Reco_electron_pt": {"branch": "Reco_electron_pt", "xlabel": r"Reco $p_{T}(e)$ [GeV]",    "bins": 30, "range": (0, 200)},
+    "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
+
 }
 
 selection_style = {
@@ -179,7 +340,8 @@ selection_style = {
     "HLT": {"label": "Events that pass HLT", "color": "purple",           "histtype": "fill", "hatch": ""},
     "NGT": {"label": "Events that pass NGT", "color": "darkorchid",       "histtype": "step", "hatch": "//"},
 }
- 
+
+
 branches = [vcfg["branch"] for vcfg in var_configs.values()]
 
 data = {}
@@ -189,19 +351,31 @@ for ch, cfg in channels.items():
     all_arrs = get_leg_arrays(channel[ch],           branches)
     hlt_arrs = get_leg_arrays(streams[f"HLT_{suf}"], branches)
     ngt_arrs = get_leg_arrays(streams[f"NGT_{suf}"], branches)
-    recoTau_arrs  = get_leg_arrays(ReconstructedTau[ch],  branches)
-    recoJet_arrs  = get_leg_arrays(ReconstructedJet[ch],  branches)
-    recoBoth_arrs = get_leg_arrays(ReconstructedBoth[ch], branches)
+    
+    reco_tau_arrs  = get_leg_arrays(streams_reco[f"Reco_tau_{suf}"], branches)
+    reco_jet_arrs  = get_leg_arrays(streams_reco[f"Reco_jet_{suf}"], branches)
+    reco_both_arrs = get_leg_arrays(streams_reco[f"Reco_both_{suf}"], branches)
+
+    reco_tagged_tau_arrs  = get_leg_arrays(streams_reco[f"Reco_tagged_tau_{suf}"], branches)
+    reco_bjet_arrs        = get_leg_arrays(streams_reco[f"Reco_bjet_{suf}"], branches)
+    reco_both_tagged_arrs = get_leg_arrays(streams_reco[f"Reco_both_tagged_{suf}"], branches)
 
     for var, vcfg in var_configs.items():
         data[f"{var}_all_{suf}"] = all_arrs[vcfg["branch"]]
         data[f"{var}_HLT_{suf}"] = hlt_arrs[vcfg["branch"]]
         data[f"{var}_NGT_{suf}"] = ngt_arrs[vcfg["branch"]]
-        data[f"{var}_RecoTau_{suf}"]  = recoTau_arrs[vcfg["branch"]]
-        data[f"{var}_RecoJet_{suf}"]  = recoJet_arrs[vcfg["branch"]]
-        data[f"{var}_RecoBoth_{suf}"] = recoBoth_arrs[vcfg["branch"]]
+
+        data[f"{var}_Reco_tau_{suf}"]  = reco_tau_arrs[vcfg["branch"]]
+        data[f"{var}_Reco_jet_{suf}"]  = reco_jet_arrs[vcfg["branch"]]
+        data[f"{var}_Reco_both_{suf}"] = reco_both_arrs[vcfg["branch"]]
+
+        data[f"{var}_Reco_tagged_tau_{suf}"]  = reco_tagged_tau_arrs[vcfg["branch"]]
+        data[f"{var}_Reco_bjet_{suf}"]  = reco_bjet_arrs[vcfg["branch"]]
+        data[f"{var}_Reco_both_tagged_{suf}"] = reco_both_tagged_arrs[vcfg["branch"]]
 
  
+#──────────────────────────────────────────────────────────────────────── Plotting ────────────────────────────────────────────────────────────────────────────────
+
 def plot_kinematic(var, ch):
     path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/"
     os.makedirs(path, exist_ok=True)
@@ -264,48 +438,62 @@ def plot_efficiency(var, ch, save_as, scale):
     ax2.set_ylabel("Efficiency", color=eff_color)
     ax2.tick_params(axis='y', labelcolor=eff_color)
     ax2.set_ylim(0, 1)
+    plt.tight_layout()
     ax2.legend(loc="upper left", fontsize=20)
     ax.legend(loc="upper right", fontsize=20)
-    plt.tight_layout()
- 
     if scale == 'log':
         ax.set_yscale('log')
  
-    outname = f"{path}/eff_{var}_{suf}_{scale}.{save_as}"
+    outname = f"{path}/{var}_{suf}_{scale}.{save_as}"
     fig.savefig(outname)
     plt.close(fig)
     print(f"Saved {outname}")
  
 
-def plot_reco_efficiency(var, ch, save_as, scale, tau=False, jet=False, both=False):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency"
-    os.makedirs(path, exist_ok=True)
-
+def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet=False, Both=False):
     fig, ax = plt.subplots(figsize=(10, 8))
     suf   = channels[ch]["suffix"]
     vcfg  = var_configs[var]
     bins, rng = vcfg["bins"], vcfg["range"]
 
     hist_data = {}
-
     arr_all  = data[f"{var}_all_{suf}"]
-    if tau==True:
-        arr_reco = data[f"{var}_RecoTau_{suf}"]
-        lb= r"2 matched $\tau$s"
+    
+    if Tau==True:
+        arr_reco = data[f"{var}_Reco_tau_{suf}"]
+        arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"]
+        lb   = r"Matched+$\tau$-tagged"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noBTagging_TEST"
 
-    if jet==True:
-        arr_reco = data[f"{var}_RecoJet_{suf}"]
-        lb= r"2 matched $b$-jets"
-    if both==True:
-        arr_reco = data[f"{var}_RecoBoth_{suf}"]
-        lb= r"2 matched $\tau$'s + $b$-jets"
-
+    if Jet==True:
+        arr_reco = data[f"{var}_Reco_jet_{suf}"]
+        arr_reco_tagged = data[f"{var}_Reco_bjet_{suf}"]
+        lb   = r"Matched+b-tagged"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTauTagging_TEST"
+    
+    if Both==True:
+        arr_reco = data[f"{var}_Reco_both_{suf}"]
+        arr_reco_tagged = data[f"{var}_Reco_both_tagged_{suf}"]
+        lb   = r"Matched+$\tau$&b-tagged"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_withTagging_TEST"
+   
+    if No_tag==True: 
+        arr_reco        = data[f"{var}_NGT_{suf}"]
+        arr_reco_tagged = data[f"{var}_NGT_{suf}"]
+        lb   = r"Matched"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTagging_TEST"
+    
+    os.makedirs(path, exist_ok=True)
+    
     counts, edges = np.histogram(arr_all, bins=bins, range=rng, density=False)
     counts2, edges2 = np.histogram(arr_reco, bins=bins, range=rng, density=False)
+    counts3, edges3 = np.histogram(arr_reco_tagged, bins=bins, range=rng, density=False)
     hist_data['all']  = counts
     hist_data['Reco'] = counts2
-    hep.histplot(counts, edges, ax=ax,   label="All", color="mediumvioletred", histtype="step")
-    hep.histplot(counts2, edges2, ax=ax, label=lb,    color="purple",          histtype="fill")
+    hist_data['Reco_tagged'] = counts3
+    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",          color="mediumblue",         histtype="step", hatch= ""),
+    # hep.histplot(counts2, edges2, ax=ax, label="Matched",           color="mediumslateblue",    histtype="step", hatch= "//"),
+    hep.histplot(counts3, edges3, ax=ax, label="Matched+tagged",    color="steelblue",          histtype="fill", hatch= ""),
 
     ax.set_xlabel(vcfg["xlabel"])
     ax.set_ylabel("Events")
@@ -317,12 +505,14 @@ def plot_reco_efficiency(var, ch, save_as, scale, tau=False, jet=False, both=Fal
     den         = hist_data["all"]
 
     eff_NGT, err_NGT = eff_and_err(hist_data["Reco"], den)
+    eff_NGT2, err_NGT2 = eff_and_err(hist_data["Reco_tagged"], den)
 
-    eff_color = "olivedrab"
+    eff_color = "deeppink"
     ax2 = ax.twinx()
-    ax2.errorbar(centers, eff_NGT, xerr=0.5 * bin_widths, yerr=err_NGT, color=eff_color, fmt='*', label="Reco efficiency")
+    #ax2.errorbar(centers, eff_NGT, xerr=0.5 * bin_widths,  yerr=err_NGT,  color=eff_color, fmt='*', label="Reco efficiency")
+    ax2.errorbar(centers, eff_NGT2, xerr=0.5 * bin_widths, yerr=err_NGT2, color=eff_color, fmt='*', label="Reco efficiency (tagged)")
     ax2.set_ylabel("Efficiency", color=eff_color)
-    ax2.tick_params(axis='y', labelcolor=eff_color)
+    ax2.tick_params(axis='y',    labelcolor=eff_color)
     ax2.set_ylim(0, 1)
     ax2.legend(loc="upper left", fontsize=20)
     ax.legend(loc="upper right", fontsize=20)
@@ -331,31 +521,35 @@ def plot_reco_efficiency(var, ch, save_as, scale, tau=False, jet=False, both=Fal
     if scale == 'log':
         ax.set_yscale('log')
 
-    outname = f"{path}/eff_{var}_{suf}_{scale}.{save_as}"
+    outname = f"{path}/{var}_{suf}_{scale}.{save_as}"
     fig.savefig(outname)
     plt.close(fig)
-    print(f"Saved {outname}")
-
-
+    print(f"Saved /{outname}")
 
 
 for var in var_configs:
     for ch in channels:
         plot_kinematic(var, ch)
 
-efficiency_vars = ["Gen_tau_pt", "Gen_tau_eta", "Reco_jet_pT","Reco_jet_eta"]
-for var in efficiency_vars:
-    for ch in channels:
-        plot_efficiency(var, ch, save_as='png', scale='lin')
+# for var in var_configs:
+#     for ch in channels:
+#         plot_efficiency(var, ch, save_as='png', scale='lin')
 
-Reco_efficiency_vars = ["Reco_jet_pT", "Reco_jet_eta"]
-# for var in Reco_efficiency_vars:
-for ch in channels:
-    plot_reco_efficiency("Gen_bjet_pt", ch, save_as='png', scale='lin', both=True)
-    plot_reco_efficiency("Gen_bjet_eta", ch, save_as='png', scale='lin', both=True)
+# for ch in channels:
+#     plot_reco_efficiency("Gen_b_leading_jet_pt", ch, save_as='png', scale='lin',    Both=True)
+#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
+#     plot_reco_efficiency("Gen_b_leading_jet_eta", ch, save_as='png', scale='lin',   Both=True)
+#     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin',Both=True)
 
+#     plot_reco_efficiency("Gen_tau_leading_pt", ch, save_as='png', scale='lin',      Both=True)
+#     plot_reco_efficiency("Gen_tau_subleading_pt", ch, save_as='png', scale='lin',   Both=True)
 
-
+#     plot_reco_efficiency("Gen_tau_leading_pt", ch, save_as='png', scale='lin',      Both=True)
+#     plot_reco_efficiency("Gen_tau_subleading_pt", ch, save_as='png', scale='lin',   Both=True)
+#     plot_reco_efficiency("Gen_b_leading_jet_pt", ch, save_as='png', scale='lin',    Both=True)
+#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
+#     plot_reco_efficiency("Gen_tau_leading_eta", ch, save_as='png', scale='lin',     Both=True)
+#     plot_reco_efficiency("Gen_tau_subleading_eta", ch, save_as='png', scale='lin',  Both=True)
 
 
 
