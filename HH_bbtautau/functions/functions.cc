@@ -203,10 +203,10 @@ ROOT::RVec<PtEtaPhiMVector> Get_all_taus_p4(const RVecI& tau_indices, const RVec
         }
         result.push_back(PtEtaPhiMVector(pt.at(idx), eta.at(idx), phi.at(idx), mass.at(idx)));
     }
-    std::sort(result.begin(), result.end(),
-              [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
-                  return a.Pt() > b.Pt();
-              });
+    // std::sort(result.begin(), result.end(),
+    //           [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
+    //               return a.Pt() > b.Pt();
+    //           });
 
     return result;
 }
@@ -255,10 +255,10 @@ ROOT::RVec<PtEtaPhiMVector> Get_visible_tau_p4s(const RVecI& tau_indices, const 
     for (std::size_t i = 0; i < tau_indices.size(); i++)
         result.push_back(Get_visible_tau_p4(tau_indices[i], pdgId, idx_mother, pt, eta, phi, mass));
     
-    std::sort(result.begin(), result.end(),
-            [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
-                return a.Pt() > b.Pt();
-            });
+    // std::sort(result.begin(), result.end(),
+    //         [](const PtEtaPhiMVector& a, const PtEtaPhiMVector& b) {
+    //             return a.Pt() > b.Pt();
+    //         });
     return result;
 }
 
@@ -336,36 +336,58 @@ float get_ID_threshold(const float pt)
 }
 
 
-RVecI deltaR_matching(const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi, const RVecF& reco_pt, const RVecF& reco_eta, const RVecF& reco_phi, const RVecF& TauVSjet, bool use_tagging)
+RVecI deltaR_matching(const RVecI& idx, const RVecI& pdg,
+                       const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi,
+                       const RVecF& pt_tau, const RVecF& eta_tau, const RVecF& phi_tau,
+                       const RVecF& pt_electron, const RVecF& eta_electron, const RVecF& phi_electron,
+                       const RVecF& pt_muon, const RVecF& eta_muon, const RVecF& phi_muon,
+                       const RVecF& TauVSjet, bool use_tagging)
 {
     RVecI matched_indices;
-    std::vector<bool> reco_used(reco_pt.size(), false);
+
+    std::vector<bool> tau_used(pt_tau.size(), false);
+    std::vector<bool> electron_used(pt_electron.size(), false);
+    std::vector<bool> muon_used(pt_muon.size(), false);
 
     for (std::size_t i = 0; i < gen_pt.size(); i++){
         if (gen_pt[i] < 0) { matched_indices.push_back(-1); continue; }
 
-        double min_dR = 999.0;
-        int idx_reco_tau = -1;
+        int pdg_id = std::abs(pdg[idx[i]]);
 
-        for (std::size_t j = 0; j < reco_pt.size(); j++){
-            if (reco_used[j]) continue;
-            float id_threshold = get_ID_threshold(reco_pt[j]);
-            if (use_tagging){
+        const RVecF* pt  = nullptr;
+        const RVecF* eta = nullptr;
+        const RVecF* phi = nullptr;
+        std::vector<bool>* used = nullptr;
+        bool is_tau = false;
+
+        if (pdg_id == 15){ pt = &pt_tau;      eta = &eta_tau;      phi = &phi_tau;      used = &tau_used;      is_tau = true; }
+        else if (pdg_id == 11){ pt = &pt_electron; eta = &eta_electron; phi = &phi_electron; used = &electron_used; }
+        else if (pdg_id == 13){ pt = &pt_muon;     eta = &eta_muon;     phi = &phi_muon;     used = &muon_used; }
+        else { matched_indices.push_back(-1); continue; }
+
+        double min_dR = 999.0;
+        int idx_reco = -1;
+
+        for (std::size_t j = 0; j < pt->size(); j++){
+            if ((*used)[j]) continue;
+
+            if (is_tau && use_tagging){
+                float id_threshold = get_ID_threshold((*pt)[j]);
                 if (TauVSjet[j] < id_threshold) continue;
             }
 
-            double D_eta = gen_eta[i] - reco_eta[j];
-            double D_phi = gen_phi[i] - reco_phi[j];
+            double D_eta = gen_eta[i] - (*eta)[j];
+            double D_phi = gen_phi[i] - (*phi)[j];
             while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;
             while (D_phi < -M_PI) D_phi += 2.0 * M_PI;
 
             double current_dR = std::sqrt(D_eta*D_eta + D_phi*D_phi);
-            if (current_dR < min_dR) { min_dR = current_dR; idx_reco_tau = j; }
+            if (current_dR < min_dR) { min_dR = current_dR; idx_reco = j; }
         }
 
-        if (idx_reco_tau != -1 && min_dR <= 0.3) {
-            matched_indices.push_back(idx_reco_tau);
-            reco_used[idx_reco_tau] = true;
+        if (idx_reco != -1 && min_dR <= 0.3) {
+            matched_indices.push_back(idx_reco);
+            (*used)[idx_reco] = true;
         } else {
             matched_indices.push_back(-1);
         }

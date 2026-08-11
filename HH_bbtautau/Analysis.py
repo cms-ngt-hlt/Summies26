@@ -132,8 +132,8 @@ df = (
     
    # ───────────────────────────────────────────────────────────────────── Reco ────────────────────────────────────────────────────────────────────────────────
 
-    .Define("Matched_tau_idx",              f"deltaR_matching(Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_deepTauVSjet, false)")
-    .Define("Matched_tagged_tau_idx",       f"deltaR_matching(Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltHpsPFTau_deepTauVSjet, true)")
+    .Define("Matched_tau_idx",              f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, false)")
+    .Define("Matched_tagged_tau_idx",       f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, true)")
 
     .Define("Reco_tau_pt",           "Get_variable(Matched_tau_idx, hltHpsPFTau_pt)")
     .Define("Reco_tau_eta",          "Get_variable(Matched_tau_idx, hltHpsPFTau_eta)")
@@ -294,19 +294,19 @@ var_configs = {
     # "Reco_tau_DR": {"branch": "Reco_tau_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
     # "Reco_jet_DR": {"branch": "Reco_jet_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
     
-    "Gen_tau_pt":      {"branch": "Gen_tau_pt",      "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
-    "Gen_tau_all_pt":  {"branch": "Gen_tau_all_pt",  "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
+    # "Gen_tau_pt":      {"branch": "Gen_tau_pt",      "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
+    # "Gen_tau_all_pt":  {"branch": "Gen_tau_all_pt",  "xlabel": r"Gen $p_{T}(\tau's)$ [GeV]", "bins": 30, "range": (0, 300)},
 
-    "Gen_tau_leading_pt":     {"branch": "Gen_tau_leading_pt",     "xlabel": r"Gen $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
-    "Gen_tau_subleading_pt":  {"branch": "Gen_tau_subleading_pt",  "xlabel": r"Gen $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
+    "Gen_tau_leading_pt":     {"branch": "Gen_tau_leading_pt",     "xlabel": r"Gen $p_{T}(\mu)$ [GeV]",    "bins": 30, "range": (0, 300)},
+    "Gen_tau_subleading_pt":  {"branch": "Gen_tau_subleading_pt",  "xlabel": r"Gen $p_{T}(\tau)$ [GeV]", "bins": 30, "range": (0, 300)},
     
-    "Gen_tau_leading_eta":    {"branch": "Gen_tau_leading_eta",    "xlabel": r"Gen $\eta(\tau)$ Leading",    "bins": 30, "range": (-3, 3)},
-    "Gen_tau_subleading_eta": {"branch": "Gen_tau_subleading_eta", "xlabel": r"Gen $\eta(\tau)$ Subleading", "bins": 30, "range": (-3, 3)},
+    "Gen_tau_leading_eta":    {"branch": "Gen_tau_leading_eta",    "xlabel": r"Gen $\eta(e)$ Leading",    "bins": 30, "range": (-3, 3)},
+    "Gen_tau_subleading_eta": {"branch": "Gen_tau_subleading_eta", "xlabel": r"Gen $\eta(\tau)$", "bins": 30, "range": (-3, 3)},
     
-    "bscore":          {"branch": "Matched_jet_bscore", "xlabel": r"$b-score$",    "bins": 30, "range": (0, 1)},
+    # "bscore":          {"branch": "Matched_jet_bscore", "xlabel": r"$b-score$",    "bins": 30, "range": (0, 1)},
 
-    "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$",       "bins": 4, "range": (-0.5, 3.5)},
-    "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",         "bins": 4, "range": (-0.5, 3.5)},
+    # "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$",       "bins": 4, "range": (-0.5, 3.5)},
+    # "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",         "bins": 4, "range": (-0.5, 3.5)},
     
     "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet [GeV]",   "bins": 30, "range": (0, 300)},
     "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet [GeV]","bins": 30, "range": (0, 300)},
@@ -314,29 +314,31 @@ var_configs = {
     "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
     "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
     
-    "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ [GeV]",   "bins": 30, "range": (0, 200)},
-    "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ [GeV]", "bins": 30, "range": (0, 200)},
+    # "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ [GeV]",   "bins": 30, "range": (0, 200)},
+    # "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ [GeV]", "bins": 30, "range": (0, 200)},
 
-    "Gen_H_tautau_mass":       {"branch": "Gen_H_tautau_mass",     "xlabel": r"Gen $m_H$ [GeV]",  "bins": 30, "range": (110, 140)},
+    # "Gen_H_tautau_mass":       {"branch": "Gen_H_tautau_mass",     "xlabel": r"Gen $m_H$ [GeV]",  "bins": 30, "range": (110, 140)},
 
 
 
-    "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
-    "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
+    # "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
+    # "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
 
-    "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
-    "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
+    # "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
+    # "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
     
-    "Reco_leading_jet_eta":    {"branch": "Reco_leading_jet_eta",    "xlabel": r"Reco $\eta$ Leading jet",    "bins": 30, "range": (-3, 3)},
-    "Reco_subleading_jet_eta": {"branch": "Reco_subleading_jet_eta", "xlabel": r"Reco $\eta$ Subleading jet", "bins": 30, "range": (-3, 3)},
+    # "Reco_leading_jet_eta":    {"branch": "Reco_leading_jet_eta",    "xlabel": r"Reco $\eta$ Leading jet",    "bins": 30, "range": (-3, 3)},
+    # "Reco_subleading_jet_eta": {"branch": "Reco_subleading_jet_eta", "xlabel": r"Reco $\eta$ Subleading jet", "bins": 30, "range": (-3, 3)},
     
-    "Reco_electron_pt": {"branch": "Reco_electron_pt", "xlabel": r"Reco $p_{T}(e)$ [GeV]",    "bins": 30, "range": (0, 200)},
-    "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
+    # "Reco_electron_pt": {"branch": "Reco_electron_pt", "xlabel": r"Reco $p_{T}(e)$ [GeV]",    "bins": 30, "range": (0, 200)},
+    # "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
 
 }
+    # "all": {"label": r"All events",          "color": "mediumvioletred",  "histtype": "step", "hatch": ""},
+    # "all": {"label": r"Gen-Reco $\tau$/e",           "color": "#C39047",  "histtype": "fill", "hatch": ""},
 
 selection_style = {
-    "all": {"label": "All events",           "color": "mediumvioletred",  "histtype": "step", "hatch": ""},
+    "all": {"label": r"All events",          "color": "mediumvioletred",  "histtype": "step", "hatch": ""},
     "HLT": {"label": "Events that pass HLT", "color": "purple",           "histtype": "fill", "hatch": ""},
     "NGT": {"label": "Events that pass NGT", "color": "darkorchid",       "histtype": "step", "hatch": "//"},
 }
@@ -492,7 +494,7 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     hist_data['Reco'] = counts2
     hist_data['Reco_tagged'] = counts3
     hep.histplot(counts, edges, ax=ax,   label="Pass NGT",          color="mediumblue",         histtype="step", hatch= ""),
-    # hep.histplot(counts2, edges2, ax=ax, label="Matched",           color="mediumslateblue",    histtype="step", hatch= "//"),
+    hep.histplot(counts2, edges2, ax=ax, label="Matched",           color="mediumslateblue",    histtype="step", hatch= "//"),
     hep.histplot(counts3, edges3, ax=ax, label="Matched+tagged",    color="steelblue",          histtype="fill", hatch= ""),
 
     ax.set_xlabel(vcfg["xlabel"])
@@ -527,29 +529,29 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     print(f"Saved /{outname}")
 
 
-for var in var_configs:
-    for ch in channels:
-        plot_kinematic(var, ch)
+# for var in var_configs:
+#     for ch in channels:
+#         plot_kinematic(var, ch)
 
 # for var in var_configs:
 #     for ch in channels:
 #         plot_efficiency(var, ch, save_as='png', scale='lin')
 
-# for ch in channels:
-#     plot_reco_efficiency("Gen_b_leading_jet_pt", ch, save_as='png', scale='lin',    Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_eta", ch, save_as='png', scale='lin',   Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin',Both=True)
+for ch in channels:
+    plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Jet=True)
 
-#     plot_reco_efficiency("Gen_tau_leading_pt", ch, save_as='png', scale='lin',      Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt", ch, save_as='png', scale='lin',   Both=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin',   Tau=True)
+    plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin',   Tau=True)
 
-#     plot_reco_efficiency("Gen_tau_leading_pt", ch, save_as='png', scale='lin',      Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt", ch, save_as='png', scale='lin',   Both=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_pt", ch, save_as='png', scale='lin',    Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_leading_eta", ch, save_as='png', scale='lin',     Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_eta", ch, save_as='png', scale='lin',  Both=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Jet=True)
 
 
 
