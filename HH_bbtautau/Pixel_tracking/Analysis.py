@@ -321,7 +321,7 @@ df = (
 # for c in sorted(L1_cols):
     # print(f"  {c}  [{df.GetColumnType(c)}]")
 
-df.Display(["Gen_tau_all_pt", "Gen_tau_pt", "tau_channel"], 50).Print()
+# df.Display(["Gen_tau_all_pt", "Gen_tau_pt", "tau_channel"], 50).Print()
 # sys.exit()
 
 #──────────────────────────────────────────────────────────────────── Filter dataframe ────────────────────────────────────────────────────────────────────────────────
@@ -432,7 +432,7 @@ var_configs = {
     # "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
 
     # "Reco_H_tt_mass": {"branch": "Reco_H_tt_mass",  "xlabel": r"Reco $m_H(\tau \tau)$ [GeV]",  "bins": 30, "range": (100, 150)},
-    # "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$ [GeV]",  "bins": 30, "range": (100, 150)},
+    "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$",  "bins": 30, "range": (0, 150)},
     # "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
 
 }
@@ -724,7 +724,12 @@ for var in var_configs:
 #     for ch in channels:
 #         plot_efficiency(var, ch, save_as='png', scale='lin')
 
-# for ch in channels:
+for ch in channels:
+    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', No_tag=True)
+    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Both=True)
+
 #     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Jet=True)

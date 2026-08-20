@@ -504,7 +504,7 @@ RVecI deltaR_matching_jets(const RVecI& gen_b_idx, const RVecF& Gen_eta, const R
             if (total_prob == 0) continue;
             float b_disc = (prob_b[j] + prob_bb[j] + prob_lepb[j]) / total_prob;
             if (use_tagging){
-                if (b_disc < 0.92) continue;
+                if (b_disc < 0.5) continue;
             }
 
             double D_eta = Gen_eta[idx_gen] - reco_eta[j];

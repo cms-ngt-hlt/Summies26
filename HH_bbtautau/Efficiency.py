@@ -5,9 +5,10 @@ import argparse
 import shutil
 import tempfile
 from pathlib import Path
+import re
 
 REPO_DIR = Path(__file__).resolve().parent
-SRC = REPO_DIR / "functions" / "functions.cc"
+SRC = REPO_DIR  / "functions.cc"
 HDR_DIR = REPO_DIR / "headers"
 
 tmp_dir = Path(tempfile.mkdtemp(prefix="root_aclic_"))
@@ -34,24 +35,35 @@ def make_chain(file_names):
         chain.Add(file_name)
     return chain
 
+import re
+
+def filter_by_index(file_list, min_idx=0, max_idx=19):
+    filtered = []
+    for f in file_list:
+        m = re.search(r"step2_(\d+)\.root$", f)
+        if m and min_idx <= int(m.group(1)) <= max_idx:
+            filtered.append(f)
+    filtered.sort(key=lambda f: int(re.search(r"step2_(\d+)\.root$", f).group(1)))
+    return filtered
 
 #─────────────────────────────────────── Get files ────────────────────────────────────────
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Argument for Gen_Analysis')
-    parser.add_argument('--run-merging', action='store_true', required=False,
-                         help='Run merging of NGT and HLT input files.')
-    parser.add_argument('--out', default='efficiency_table.txt',
-                         help='Output .txt file for the efficiency table.')
+    parser.add_argument('--run-merging', action='store_true', required=False, help='Run merging of NGT and HLT input files.')
+    parser.add_argument('--out', default='efficiency_table.txt', help='Output .txt file for the efficiency table.')
     args = parser.parse_args()
 
     if args.run_merging:
         os.makedirs("Dataframes", exist_ok=True)
 
         base_dir_hlt = "/eos/user/e/evernazz/Sarah/HHbbtautau/HLTStandard/"
-        base_dir_ngt = "/eos/user/e/evernazz/Sarah/HHbbtautau/NGTScouting/"
+        base_dir_ngt = "/eos/user/e/evernazz/Sarah/HHbbtautau/NGTScouting_ImprovedPixelTracking"
 
-        files_hlt = files_with_events(sorted(glob.glob(base_dir_hlt + "/step2_*.root")))
-        files_ngt = files_with_events(sorted(glob.glob(base_dir_ngt + "/step2_*.root")))
+        files_hlt_all = glob.glob(base_dir_hlt + "/step2_*.root")
+        files_ngt_all = glob.glob(base_dir_ngt + "/step2_*.root")
+
+        files_hlt = files_with_events(filter_by_index(files_hlt_all, 0, 19))
+        files_ngt = files_with_events(filter_by_index(files_ngt_all, 0, 19))
 
         chain_hlt = make_chain(files_hlt)
         chain_ngt = make_chain(files_ngt)
@@ -64,8 +76,7 @@ if __name__ == '__main__':
 
         cols_ngt_filtered = [str(c) for c in df_ngt.GetColumnNames() if not str(c).startswith("HLT_")]
         print(f"Keeping {len(cols_ngt_filtered)} NGT columns for merging.")
-        cols_hlt_filtered = [str(c) for c in df_hlt.GetColumnNames()
-                              if str(c).startswith("HLT_") and not str(c).endswith("_pHLT")]
+        cols_hlt_filtered = [str(c) for c in df_hlt.GetColumnNames() if str(c).startswith("HLT_") and not str(c).endswith("_pHLT")]
         print(f"Keeping {len(cols_hlt_filtered)} HLT columns for merging.")
 
         chain_ngt.AddFriend(chain_hlt)
@@ -80,10 +91,9 @@ if __name__ == '__main__':
 
         snapshot_options = ROOT.RDF.RSnapshotOptions()
         snapshot_options.fCompressionLevel = 4
-        df.Snapshot("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_ngt_hlt.root",
-                    snapshot_columns, snapshot_options)
+        df.Snapshot("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_pixel_tracking.root", snapshot_columns, snapshot_options)
     else:
-        df = ROOT.RDataFrame("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_ngt_hlt.root")
+        df = ROOT.RDataFrame("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_pixel_tracking.root")
 
     #─────────────────────────────────────── Define variables ────────────────────────────────────────
     df = (
@@ -162,8 +172,8 @@ if __name__ == '__main__':
         
     # ───────────────────────────────────────────────────────────────────── Reco ────────────────────────────────────────────────────────────────────────────────
 
-        .Define("Matched_tau_idx",              f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, false)")
-        .Define("Matched_tagged_tau_idx",       f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, true)")
+        .Define("Matched_tau_idx",        f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, false)")
+        .Define("Matched_tagged_tau_idx", f"deltaR_matching(Gen_tau_idx, GenPart_pdgId, Gen_tau_pt, Gen_tau_eta, Gen_tau_phi, hltHpsPFTau_pt, hltHpsPFTau_eta, hltHpsPFTau_phi, hltElectron_pt, hltElectron_eta, hltElectron_phi, hltMuon_pt, hltMuon_eta, hltMuon_phi, hltHpsPFTau_deepTauVSjet, true)")
 
         .Define("Reco_tau_pt",           "Get_variable(Matched_tau_idx, hltHpsPFTau_pt)")
         .Define("Reco_tau_eta",          "Get_variable(Matched_tau_idx, hltHpsPFTau_eta)")
@@ -273,19 +283,19 @@ if __name__ == '__main__':
             leg1_name = "τ1"
             leg2_name = "τ2"
 
-        leg1_expr = f"{tau_var}[0] > 0"
-        leg2_expr = f"{tau_var}[1] > 0"
+        leg1_expr = f"{tau_var}[0] >= 0"
+        leg2_expr = f"{tau_var}[1] >= 0"
         combined_expr = f"({leg1_expr}) && ({leg2_expr})"
         return leg1_expr, leg1_name, leg2_expr, leg2_name, combined_expr
 
     channels = {
         0: {"label": "electron", 
             "filter": "tau_channel == 0",
-            "trig": "HLT_Ele32_WPTight_L1Seeded == true && HLT_Ele30_WPTight_L1Seeded_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 == true"},
+            "trig": "HLT_Ele32_WPTight_L1Seeded == true || HLT_Ele30_WPTight_L1Seeded_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 == true"},
         
         1: {"label": "muon", 
             "filter": "tau_channel == 1",
-            "trig": "HLT_IsoMu24_FromL1TkMuon == true && HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 == true"},
+            "trig": "HLT_IsoMu24_FromL1TkMuon == true || HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 == true"},
         
         2: {"label": "hadronic", 
             "filter": "tau_channel == 2",
@@ -392,16 +402,16 @@ if __name__ == '__main__':
             leg2_name = ch_rows[0]["leg2_name"]
 
             columns = [
-                ("Channel",             "channel",       9,  "s"),
-                ("Stream",              "stream",        6,  "s"),
-                ("Total",               "total",         9,  "d"),
-                ("Triggered",           "triggered",     10, "d"),
-                ("Acceptance",          "trig_eff",      11, "pct"),
-                (f"{leg1_name} Matched", "leg1_reco_eff", 13, "pct"),
-                (f"{leg2_name} Matched", "leg2_reco_eff", 13, "pct"),
+                ("Channel",               "channel",       9,  "s"),
+                ("Stream",                "stream",        6,  "s"),
+                ("Total",                 "total",         9,  "d"),
+                ("Triggered",             "triggered",     10, "d"),
+                ("Acceptance",            "trig_eff",      11, "pct"),
+                (f"{leg1_name} Matched",  "leg1_reco_eff", 13, "pct"),
+                (f"{leg2_name} Matched",  "leg2_reco_eff", 13, "pct"),
                 (f"{leg1_name}+{leg2_name} Matched",      "lep_reco_eff",  15, "pct"),
-                ("Jet Matched",          "jet_reco_eff",  12, "pct"),
-                ("Both Matched",          "both_reco_eff", 12, "pct"),
+                ("Jet Matched",            "jet_reco_eff",  12, "pct"),
+                ("Both Matched",           "both_reco_eff", 12, "pct"),
             ]
             header_line = col_gap.join(f"{name:<{w}}" if kind == "s" else f"{name:>{w}}" for name, _, w, kind in columns)
             sep_line = "-" * len(header_line)
@@ -424,18 +434,3 @@ if __name__ == '__main__':
         f.write(table_text + "\n")
 
     print(f"\nTable written to {args.out}")
-
-    df_check = (
-    df.Filter("tau_channel == 2")
-      .Define("old_idx0", "Get_tau_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)[0]")
-      .Define("new_idx0", "Gen_tau_idx[0]")
-      .Define("old_idx1", "Get_tau_from_H_indices(GenPart_pdgId, GenPart_statusFlags, GenPart_genPartIdxMother)[1]")
-      .Define("new_idx1", "Gen_tau_idx[1]")
-      .Define("idx_diff0", "old_idx0 - new_idx0")
-      .Define("idx_diff1", "old_idx1 - new_idx1")
-    )
-
-    h0 = df_check.Histo1D(("d0", "", 21, -10, 10), "idx_diff0")
-    h1 = df_check.Histo1D(("d1", "", 21, -10, 10), "idx_diff1")
-    print("Mean index diff leg0:", h0.GetMean(), "  nonzero fraction:", (h0.Integral() - h0.GetBinContent(h0.FindBin(0))) / h0.Integral())
-    print("Mean index diff leg1:", h1.GetMean())
