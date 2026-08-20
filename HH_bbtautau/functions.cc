@@ -630,15 +630,15 @@ RVecF Get_Dphi(const RVecI& reco_tau_indices, const RVecF& gen_phi, const RVecF&
     return result;
 }
 
-PtEtaPhiMVector Build_Higgs_p4(const RVecI& idx_tau, const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
+PtEtaPhiMVector Build_Higgs_p4(const RVecI& idx_daughter, const RVecF& pt, const RVecF& eta, const RVecF& phi, const RVecF& mass)
 {
-    if (idx_tau.size() != 2 || idx_tau[0] < 0 || idx_tau[1] < 0)
-        return PtEtaPhiMVector(-999.f, 0.f, 0.f, 0.f);
+    if (idx_daughter.size() != 2 || idx_daughter[0] < 0 || idx_daughter[1] < 0)
+        return PtEtaPhiMVector(-999.f, -999.f, -999.f, -999.f);
 
-    PtEtaPhiMVector tau1(pt.at(idx_tau[0]), eta.at(idx_tau[0]), phi.at(idx_tau[0]), mass.at(idx_tau[0]));
-    PtEtaPhiMVector tau2(pt.at(idx_tau[1]), eta.at(idx_tau[1]), phi.at(idx_tau[1]), mass.at(idx_tau[1]));
+    PtEtaPhiMVector daughter1(pt.at(idx_daughter[0]), eta.at(idx_daughter[0]), phi.at(idx_daughter[0]), mass.at(idx_daughter[0]));
+    PtEtaPhiMVector daughter2(pt.at(idx_daughter[1]), eta.at(idx_daughter[1]), phi.at(idx_daughter[1]), mass.at(idx_daughter[1]));
     
-    return tau1+tau2;
+    return daughter1+daughter2;
 }
 
 float Get_Higgs_mass(const PtEtaPhiMVector& H)
