@@ -8,32 +8,33 @@ using ROOT::RVecF;
 using ROOT::RVecI;
 using ROOT::Math::PtEtaPhiMVector; 
 
-RVecI get_muon_idx(const RVecI& pdg, const RVecI& parent, const RVecI& status)
+RVecI get_muon_idx(const RVecI& pdg, const RVecI& parent, const RVecI& status, const RVecI& pt)
 {
     RVecI results;
     for (std::size_t i = 0; i < pdg.size(); ++i)
     {
         if (!(status[i] & (1 << 13))) continue;
-        
         int pdg_i = pdg.at(i);
         int parent_idx = parent.at(i);
-        if (std::abs(pdg_i) == 13 and std::abs(pdg.at(parent_idx)) == 1023){
+
+        if (std::abs(pdg_i) == 13 &&
+            std::abs(pdg.at(parent_idx)) == 1023)
+        {
             results.push_back(i);
         }
     }
+    std::sort(results.begin(), results.end(),
+              [&](int a, int b) {
+                  return pt.at(a) > pt.at(b);
+              });
+
     return results;
 }
 
-RVecF get_variable(const RVecI& idx, const RVecF& variable)
-{
-    RVecF results;
-    for (std::size_t i = 0; i < idx.size(); i++){
-        int idx_i = idx.at(i);
-        if (idx_i < 0) continue;
-        results.push_back(variable.at(idx_i));
-    }
-    return results;
-}
+// RVecF get_variable(const RVecI& idx, const RVecF& variable)
+// {
+//     return variable[idx];
+// }
 
 RVecF get_pair_variable(const RVecI& idx, const RVecF& variable)
 {
@@ -77,9 +78,8 @@ RVecI deltaR_muon_pairing(const RVecI& idx, const RVecF& eta, const RVecF& phi, 
     if (idx1 != -1){
         results.push_back(idx1);
         results.push_back(idx2);
-        return results;
-    }  
 
+    }  
     return {};
 }
 
@@ -164,7 +164,7 @@ RVecI truth_matching(const RVecI& indices, const RVecF& gen_eta, const RVecF& ge
             if (current_dR < min_dR) { min_dR = current_dR; idx_reco_mu = j; }
         }
 
-        if (idx_reco_mu != -1 && min_dR <= 0.3) {
+        if (idx_reco_mu != -1 && min_dR <= 0.1) {
             matched_indices.push_back(idx_reco_mu);
             reco_used[idx_reco_mu] = true;
         } else {
