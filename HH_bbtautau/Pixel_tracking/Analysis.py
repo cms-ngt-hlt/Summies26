@@ -16,17 +16,33 @@ hep.style.use("CMS")
 
 REPO_DIR = Path(__file__).resolve().parent
 
-SRC = REPO_DIR / "functions.cc"
-HDR_DIR = REPO_DIR / "headers"
+SRC = Path("/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/functions.cc")
+HDR_DIR = SRC.parent / "headers"
 
 tmp_dir = Path(tempfile.mkdtemp(prefix="root_aclic_"))
-TMP = tmp_dir / "functions.cc"
+TMP = tmp_dir  / "functions.cc"
 
 shutil.copy2(SRC, TMP)
 ROOT.gSystem.AddIncludePath(f"-I{HDR_DIR}")
 ROOT.gROOT.ProcessLine(f".L {TMP}+")
 
 #───────────────────────────────────────────────────────────────── Functions ────────────────────────────────────────────────────────────────────────────────
+def files_with_events(file_names):
+    good_files = []
+    for file_name in file_names:
+        root_file = ROOT.TFile.Open(file_name)
+        if root_file and not root_file.IsZombie() and root_file.Get("Events"):
+            good_files.append(file_name)
+        if root_file:
+            root_file.Close()
+    return good_files
+
+def make_chain(file_names):
+    chain = ROOT.TChain("Events")
+    for file_name in file_names:
+        chain.Add(file_name)
+    return chain
+
 
 def get_leg_arrays(df_in, colnames):
     cols = df_in.AsNumpy(colnames)
@@ -86,9 +102,9 @@ def build_xlabel(var, vcfg, lepton):
     return label + unit
 #────────────────────────────────────────────────────────────────── Get dataframe ────────────────────────────────────────────────────────────────────────────────
 
-df = ROOT.RDataFrame("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_ngt_hlt.root")
-print(f"Total entries in df: {df.Count().GetValue()}")
 
+df = ROOT.RDataFrame("Events", "/eos/user/s/sbenabde/CERN_Summer_student/Dataframes/df_pixel_tracking.root")
+print(f"Total entries in df: {df.Count().GetValue()}")
     #────────────────────────────────────────────────────────────── Define variables ────────────────────────────────────────────────────────────────────────────────
 
 df = (
@@ -183,6 +199,7 @@ df = (
 
     .Define("Gen_H_tt_all",         f"Get_H_fromdecay(Gen_tau_all_p4)")
     .Define("Gen_H_tt",             f"Get_H_fromdecay(Gen_tau_p4)")
+    .Define("Gen_H_tt_all_mass",    f"Gen_H_tt_all.M()")
     .Define("Gen_H_tt_mass",        f"Gen_H_tt.M()")
 
     .Define("Gen_HH_firstb",        f"Get_HH(Gen_H_bb, Gen_H_tt)") 
@@ -304,7 +321,8 @@ df = (
 # for c in sorted(L1_cols):
     # print(f"  {c}  [{df.GetColumnType(c)}]")
 
-# df.Display(["Gen_bJets_flavour"], 50).Print()
+df.Display(["Gen_tau_all_pt", "Gen_tau_pt", "tau_channel"], 50).Print()
+# sys.exit()
 
 #──────────────────────────────────────────────────────────────────── Filter dataframe ────────────────────────────────────────────────────────────────────────────────
 channels = {
@@ -370,29 +388,33 @@ var_configs = {
     "Gen_tau_leading_eta":    {"branch": "Gen_tau_leading_eta",    "xlabel": r"Gen $\eta$",    "bins": 30, "range": (-3, 3)},
     "Gen_tau_subleading_eta": {"branch": "Gen_tau_subleading_eta", "xlabel": r"Gen $\eta$", "bins": 30, "range": (-3, 3)},
     
-    "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$", "bins": 4, "range": (-0.5, 3.5)},
-    "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",   "bins": 4, "range": (-0.5, 3.5)},
+    # "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$", "bins": 4, "range": (-0.5, 3.5)},
+    # "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",   "bins": 4, "range": (-0.5, 3.5)},
     
-    "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet [GeV]",   "bins": 30, "range": (0, 300)},
-    "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet [GeV]","bins": 30, "range": (0, 300)},
+    # "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet ",   "bins": 30, "range": (0, 300)},
+    # "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet ","bins": 30, "range": (0, 300)},
     
-    "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
-    "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
+    # "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
+    # "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
     
-    "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ [GeV]",   "bins": 30, "range": (0, 200)},
-    "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ [GeV]", "bins": 30, "range": (0, 200)},
+    # "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ ",   "bins": 30, "range": (0, 200)},
+    # "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ ", "bins": 30, "range": (0, 200)},
  
-    "n_Gen_b":             {"branch": "n_Gen_b",            "xlabel": r"n Gen $b$",                   "bins": 4,  "range": (-1.5, 3.5)},
+    # "n_Gen_b":             {"branch": "n_Gen_b",            "xlabel": r"n Gen $b$",                   "bins": 4,  "range": (-1.5, 3.5)},
 
-    "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$ [GeV]",  "bins": 30, "range": (10, 300)},
-    "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$ [GeV]",  "bins": 50, "range": (120, 130)},
-    "Gen_H_tt_mass":       {"branch": "Gen_H_tt_mass",      "xlabel": r"Gen $m_H(\tau \tau)$ [GeV]",  "bins": 50, "range": (120, 130)},
+    # "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$ (jets)",  "bins": 30, "range": (10, 300)},
+    # "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$ (quarks)",  "bins": 50, "range": (120, 130)},
+    
+    "Gen_H_tt_mass":       {"branch": "Gen_H_tt_mass",      "xlabel": r"Gen $m_H(\tau \tau) (visible)$ [GeV]",  "bins": 50, "range": (0, 130)},
+    "Gen_H_tt_all_mass":   {"branch": "Gen_H_tt_all_mass",  "xlabel": r"Gen $m_H(\tau \tau) (all)$ [GeV]",  "bins": 50, "range": (100, 130)},
 
-    "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$ (b-quarks) [GeV]",  "bins": 30, "range": (200, 800)},
-    "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) [GeV]",    "bins": 30, "range": (200, 800)},
 
 
-    "Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
+    # "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$ (b-quarks) ",  "bins": 30, "range": (200, 800)},
+    # "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) ",    "bins": 30, "range": (200, 800)},
+
+
+    # "Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
     
     # "Reco_tau_DR": {"branch": "Reco_tau_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
     # "Reco_jet_DR": {"branch": "Reco_jet_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
@@ -474,7 +496,7 @@ for ch, cfg in channels.items():
  
 #──────────────────────────────────────────────────────────────────────── Plotting ────────────────────────────────────────────────────────────────────────────────
 def plot_kinematic(var, ch):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/"
+    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/kinematics/"
     os.makedirs(path, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -510,6 +532,7 @@ def plot_kinematic(var, ch):
     ax.set_ylabel("Events")
     ax.legend(loc="upper right", fontsize=18)
     hep.cms.label("Private work", loc=2, data=True, ax=ax, rlabel = f"{process}, {decay} (200 PU) | 14 TeV", fontsize = 22)
+    ax.text(0.18, -0.07, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
     
     ax.grid(True, alpha=0.75, linestyle="dashdot", linewidth=0.75)
     ax.set_ylim(0, max_count * 1.4)
@@ -521,7 +544,7 @@ def plot_kinematic(var, ch):
 
         
 def plot_efficiency(var, ch, save_as, scale):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Efficiency"
+    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Efficiency"
     os.makedirs(path, exist_ok=True)
  
     fig = plt.figure(figsize=(10, 10))
@@ -591,14 +614,14 @@ def plot_efficiency(var, ch, save_as, scale):
     
     lepton = channels[ch]["lepton"]
     ax2.set_xlabel(build_xlabel(var, vcfg, lepton), fontsize=24)
-    #ax.text(0.125, -0.08, "", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
+    ax2.text(0.18, -0.53, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
 
     ax.legend(loc="upper right", fontsize=20)
     if scale == 'log':
         ax.set_yscale('log')
  
     outname = f"{path}/{var}_{suf}_{scale}.{save_as}"
-    fig.savefig(outname)
+    plt.savefig(outname, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {outname}")
  
@@ -618,25 +641,25 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
         arr_reco = data[f"{var}_Reco_tau_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"]
         lb   = r"Matched+$\tau$-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noBTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noBTagging"
 
     if Jet==True:
         arr_reco = data[f"{var}_Reco_jet_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_bjet_{suf}"]
         lb   = r"Matched+b-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTauTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTauTagging"
     
     if Both==True:
         arr_reco = data[f"{var}_Reco_both_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_both_tagged_{suf}"]
         lb   = r"Matched+$\tau$&b-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_withTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_withTagging"
    
     if No_tag==True: 
         arr_reco        = data[f"{var}_NGT_{suf}"]
         arr_reco_tagged = data[f"{var}_NGT_{suf}"]
         lb   = r"Matched"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTagging"
     
     os.makedirs(path, exist_ok=True)
     
@@ -649,7 +672,7 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     hist_data['Reco'] = counts2
     hist_data['Reco_tagged'] = counts3
     
-    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",           color="color_NGT",       histtype="step", hatch= ""),
+    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",           color=color_NGT,       histtype="step", hatch= ""),
     hep.histplot(counts2, edges2, ax=ax, label=r"$\Delta$ R Matched",color="mediumvioletred", histtype="step", hatch= "//"),
     hep.histplot(counts3, edges3, ax=ax, label="Matched+tagged",     color="purple",          histtype="fill", hatch= ""),
     
@@ -658,7 +681,7 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     ax.set_xlabel(build_xlabel(var, vcfg, lepton), fontsize=24)
     ax.set_ylabel("Events")
     hep.cms.label("Private work", loc=2, data=True, ax=ax, rlabel = f"{process}, {decay} (200 PU) | 14 TeV", fontsize = 22)
-    #ax.text(0.125, -0.08, "Full Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
+    ax.text(0.18, -0.07, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
     
     ax.grid(True, alpha=0.75, linestyle="dashdot", linewidth=0.75)
     ax.set_ylim(0, max_count * 1.3)
@@ -688,9 +711,10 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     if scale == 'log':
         ax.set_yscale('log')
     outname = f"{path}/{var}_{suf}_{scale}.{save_as}"
-    fig.savefig(outname)
+    plt.savefig(outname, dpi=300, bbox_inches="tight")
     plt.close(fig)
     print(f"Saved {outname}")
+
 
 for var in var_configs:
     for ch in channels:
@@ -710,14 +734,15 @@ for var in var_configs:
 #     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Jet=True)
 
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Tau=True)
+
 
 #     plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Both=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
