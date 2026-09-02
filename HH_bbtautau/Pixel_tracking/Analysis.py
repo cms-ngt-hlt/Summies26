@@ -19,11 +19,22 @@ REPO_DIR = Path(__file__).resolve().parent
 SRC = Path("/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/functions.cc")
 HDR_DIR = SRC.parent / "headers"
 
+SVFIT_IFACE_CC = HDR_DIR / "Tools" / "Tools" / "src" / "SVfitInterface.cc"
+CMSSW_SRC = Path("/eos/home-s/sbenabde/CERN_Summer_student/CMSSW_9_4_4/src")
+
 tmp_dir = Path(tempfile.mkdtemp(prefix="root_aclic_"))
-TMP = tmp_dir  / "functions.cc"
+TMP = tmp_dir / "functions.cc"
 
 shutil.copy2(SRC, TMP)
+
 ROOT.gSystem.AddIncludePath(f"-I{HDR_DIR}")
+ROOT.gSystem.AddIncludePath(f"-I{CMSSW_SRC}")
+
+CMSSW_LIB = Path("/eos/home-s/sbenabde/CERN_Summer_student/CMSSW_9_4_4/lib/slc7_amd64_gcc630")
+ROOT.gSystem.AddDynamicPath(str(CMSSW_LIB))
+ROOT.gSystem.Load("libTauAnalysisClassicSVfit.so")
+
+ROOT.gROOT.ProcessLine(f".L {SVFIT_IFACE_CC}+")
 ROOT.gROOT.ProcessLine(f".L {TMP}+")
 
 #───────────────────────────────────────────────────────────────── Functions ────────────────────────────────────────────────────────────────────────────────
@@ -348,7 +359,7 @@ streams = {
 }
 
 streams_reco = {
-    "Reco_tau_e":   channel[0].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0"), #1 electron matched & 1 tau matched
+    "Reco_tau_e":   channel[0].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0 && Matched_jet_idx[0] >= 0 && Matched_jet_idx[1] >= 0"),
     "Reco_tau_m":   channel[1].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0"), #1 muon matched & 1 tau matched
     "Reco_tau_h":   channel[2].Filter("DST_PFScouting == true").Filter("Matched_tau_idx[0] >= 0 && Matched_tau_idx[1] >= 0"), #2 tau's matched
     
@@ -376,6 +387,16 @@ streams_reco = {
 
 }
 
+# print(streams["L1_e"].Count().GetValue()/channel[0].Count().GetValue()*100)
+# print(streams["L1_m"].Count().GetValue()/channel[1].Count().GetValue()*100)
+# print(streams["L1_h"].Count().GetValue()/channel[2].Count().GetValue()*100)
+# print(streams["HLT_e"].Count().GetValue()/channel[0].Count().GetValue()*100)
+# print(streams["HLT_m"].Count().GetValue()/channel[1].Count().GetValue()*100)
+# print(streams["HLT_h"].Count().GetValue()/channel[2].Count().GetValue()*100)
+# print(streams["NGT_e"].Count().GetValue()/channel[0].Count().GetValue()*100)
+# print(streams["NGT_m"].Count().GetValue()/channel[1].Count().GetValue()*100)
+# print(streams["NGT_h"].Count().GetValue()/channel[2].Count().GetValue()*100)
+# sys.exit()
 # ────────────────────────────────────────────────────────────── Define histograms  ────────────────────────────────────────────────────────────────────────────────    
 
 var_configs = {
@@ -402,7 +423,7 @@ var_configs = {
  
     # "n_Gen_b":             {"branch": "n_Gen_b",            "xlabel": r"n Gen $b$",                   "bins": 4,  "range": (-1.5, 3.5)},
 
-    # "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$ (jets)",  "bins": 30, "range": (10, 300)},
+    "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$ (jets)",  "bins": 30, "range": (1, 150)},
     # "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$ (quarks)",  "bins": 50, "range": (120, 130)},
     
     "Gen_H_tt_mass":       {"branch": "Gen_H_tt_mass",      "xlabel": r"Gen $m_H(\tau \tau) (visible)$ [GeV]",  "bins": 50, "range": (0, 130)},
@@ -414,13 +435,13 @@ var_configs = {
     # "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) ",    "bins": 30, "range": (200, 800)},
 
 
-    # "Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
+    "Reco_Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
     
     # "Reco_tau_DR": {"branch": "Reco_tau_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
     # "Reco_jet_DR": {"branch": "Reco_jet_DR", "xlabel": r"$\Delta$ R", "bins": 30, "range": (0, 0.5)},
 
-    # "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
-    # "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
+    "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
+    "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
 
     # "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
     # "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
@@ -432,7 +453,7 @@ var_configs = {
     # "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
 
     # "Reco_H_tt_mass": {"branch": "Reco_H_tt_mass",  "xlabel": r"Reco $m_H(\tau \tau)$ [GeV]",  "bins": 30, "range": (100, 150)},
-    "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$",  "bins": 30, "range": (0, 150)},
+    "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$",  "bins": 30, "range": (1, 150)},
     # "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
 
 }
@@ -507,27 +528,38 @@ def plot_kinematic(var, ch):
 
     areas=[]
     max_count = 0
-    for sel_type in ["all", "NGT", "L1", "HLT"]:
+
+    if "Reco" in var:
+        sel_types = ["NGT", "L1", "HLT"]
+    else:
+        sel_types = ["all", "NGT", "L1", "HLT"]
+
+    for sel_type in sel_types:
         sel = f"{sel_type}_{suf}"
         cfg = selection_style[sel]
         arr = data[f"{var}_{sel}"]
         lb = cfg["label"]
+
         c, e = np.histogram(arr, bins=bins, range=rng)
         decay = channels[ch]["title"]
         area = np.sum(c * np.diff(e)) #diff(e) gets the width of each bin (edges 1 - edges 0), then multiplied by the height of the hist(c) gives the area of each hist, then np.sum gets the integral over the entire plot
         areas.append(area)
+    
         if areas[0] == 0:
             ratio = 0
         else:
             ratio = area/areas[0]*100
 
-        if area == areas[0]:
+        if area == areas[0] and len(sel_types)==3:
+            hep.histplot(c, e, ax=ax, label=f"NGT Acceptance", color=cfg["color"], histtype=cfg["histtype"], hatch=cfg["hatch"])
+
+        elif area == areas[0] and len(sel_types)==4:
             hep.histplot(c, e, ax=ax, label=f"{lb}", color=cfg["color"], histtype=cfg["histtype"], hatch=cfg["hatch"])
         else:
             hep.histplot(c, e, ax=ax, label=f"{lb}{ratio:.2f}%", color=cfg["color"], histtype=cfg["histtype"], hatch=cfg["hatch"])
-
         max_count = max(max(c), max_count)
 
+        
     ax.set_xlabel(vcfg["xlabel"])
     ax.set_ylabel("Events")
     ax.legend(loc="upper right", fontsize=18)
@@ -636,10 +668,10 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     lepton = channels[ch]["lepton"]
 
     hist_data = {}
-    arr_all  = data[f"{var}_all_{suf}"]
+    arr_all  = data[f"{var}_all_{suf}"] #no b matching, no tau matching, no tagging
     if Tau==True:
-        arr_reco = data[f"{var}_Reco_tau_{suf}"]
-        arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"]
+        arr_reco = data[f"{var}_Reco_tau_{suf}"] #Contains only matched tau, no b matching
+        arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"] #Contains only matched and tagged tau, no b matching or tagging
         lb   = r"Matched+$\tau$-tagged"
         path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noBTagging"
 
@@ -662,7 +694,7 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
         path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTagging"
     
     os.makedirs(path, exist_ok=True)
-    
+
     max_count = 0
     counts, edges   = np.histogram(arr_all,  bins=bins, range=rng, density=False)
     counts2, edges2 = np.histogram(arr_reco, bins=bins, range=rng, density=False)
@@ -672,9 +704,9 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     hist_data['Reco'] = counts2
     hist_data['Reco_tagged'] = counts3
     
-    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",           color=color_NGT,       histtype="step", hatch= ""),
+    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",           color=color_NGT,         histtype="step", hatch= ""),
     hep.histplot(counts2, edges2, ax=ax, label=r"$\Delta$ R Matched",color="mediumvioletred", histtype="step", hatch= "//"),
-    hep.histplot(counts3, edges3, ax=ax, label="Matched+tagged",     color="purple",          histtype="fill", hatch= ""),
+    hep.histplot(counts3, edges3, ax=ax, label=lb,                   color="purple",          histtype="fill", hatch= ""),
     
     max_count = max(max(counts), max_count)
 
@@ -729,6 +761,23 @@ for ch in channels:
     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Tau=True)
     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Jet=True)
     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Both=True)
+
+    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', No_tag=True)
+    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Both=True)
+
+    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', No_tag=True)
+    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Both=True)
+
+    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', No_tag=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Both=True)
+
+
 
 #     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)

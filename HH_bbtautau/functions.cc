@@ -192,13 +192,12 @@ int Get_tau_channel(const RVecI& tau_indices, const RVecI& pdgId, const RVecI& s
     if (mode0 == 0 && mode1 == 2) return 0;  // e + hadronic
     if (mode0 == 1 && mode1 == 2) return 1;  // mu + hadronic
     if (mode0 == 2 && mode1 == 2) return 2;  // hadronic + hadronic
-    return -1;                               // anything that's not mentioned above (e+e, e+mu...)
+    return -999;                             // anything that's not mentioned above (e+e, e+mu...)
 }
 
 RVecI Get_taus(const RVecI& tau_indices, const RVecI& pdgId, const RVecI& status, const RVecI& idx_mother, const RVecF& pt)
 {
     RVecI results;
-
     for (std::size_t i = 0; i < pdgId.size(); i++) {
         if (std::abs(pdgId[i]) == 11 || std::abs(pdgId[i]) == 13) {
             if (idx_mother[i] == tau_indices[0]) {
@@ -393,20 +392,22 @@ float get_ID_threshold(const float pt)
 
 
 RVecI deltaR_matching(const RVecI& idx, const RVecI& pdg,
-                       const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi,
-                       const RVecF& pt_tau, const RVecF& eta_tau, const RVecF& phi_tau,
-                       const RVecF& pt_electron, const RVecF& eta_electron, const RVecF& phi_electron,
-                       const RVecF& pt_muon, const RVecF& eta_muon, const RVecF& phi_muon,
-                       const RVecF& TauVSjet, bool use_tagging)
+                      const RVecF& gen_pt, const RVecF& gen_eta, const RVecF& gen_phi,
+                      const RVecF& pt_tau, const RVecF& eta_tau, const RVecF& phi_tau,
+                      const RVecF& pt_electron, const RVecF& eta_electron, const RVecF& phi_electron,
+                      const RVecF& pt_muon, const RVecF& eta_muon, const RVecF& phi_muon,
+                      const RVecF& TauVSjet, bool use_tagging)
 {
     RVecI matched_indices;
-
     std::vector<bool> tau_used(pt_tau.size(), false);
     std::vector<bool> electron_used(pt_electron.size(), false);
     std::vector<bool> muon_used(pt_muon.size(), false);
 
     for (std::size_t i = 0; i < gen_pt.size(); i++){
-        if (gen_pt[i] < 0) { matched_indices.push_back(-1); continue; }
+        if (gen_pt[i] < 0) { 
+            matched_indices.push_back(-1); 
+            continue; 
+        }
 
         int pdg_id = std::abs(pdg[idx[i]]);
 
@@ -416,29 +417,34 @@ RVecI deltaR_matching(const RVecI& idx, const RVecI& pdg,
         std::vector<bool>* used = nullptr;
         bool is_tau = false;
 
-        if (pdg_id == 15){ pt = &pt_tau;      eta = &eta_tau;      phi = &phi_tau;      used = &tau_used;      is_tau = true; }
+        if      (pdg_id == 15){ pt = &pt_tau;      eta = &eta_tau;      phi = &phi_tau;      used = &tau_used;     is_tau = true; }
         else if (pdg_id == 11){ pt = &pt_electron; eta = &eta_electron; phi = &phi_electron; used = &electron_used; }
         else if (pdg_id == 13){ pt = &pt_muon;     eta = &eta_muon;     phi = &phi_muon;     used = &muon_used; }
-        else { matched_indices.push_back(-1); continue; }
+        else    { matched_indices.push_back(-1); continue; }
 
         double min_dR = 999.0;
         int idx_reco = -1;
 
-        for (std::size_t j = 0; j < pt->size(); j++){
-            if ((*used)[j]) continue;
+        if (pt && pt->size() > 0) {
+            for (std::size_t j = 0; j < pt->size(); j++){
+                if ((*used)[j]) continue;
 
-            if (is_tau && use_tagging){
-                float id_threshold = get_ID_threshold((*pt)[j]);
-                if (TauVSjet[j] < id_threshold) continue;
+                if (is_tau && use_tagging){
+                    float id_threshold = get_ID_threshold((*pt)[j]);
+                    if (TauVSjet[j] < id_threshold) continue;
+                }
+
+                double D_eta = gen_eta[i] - (*eta)[j];
+                double D_phi = gen_phi[i] - (*phi)[j];
+                while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;
+                while (D_phi < -M_PI) D_phi += 2.0 * M_PI;
+
+                double current_dR = std::sqrt(D_eta*D_eta + D_phi*D_phi);
+                if (current_dR < min_dR) { 
+                    min_dR = current_dR; 
+                    idx_reco = static_cast<int>(j); 
+                }
             }
-
-            double D_eta = gen_eta[i] - (*eta)[j];
-            double D_phi = gen_phi[i] - (*phi)[j];
-            while (D_phi >  M_PI) D_phi -= 2.0 * M_PI;
-            while (D_phi < -M_PI) D_phi += 2.0 * M_PI;
-
-            double current_dR = std::sqrt(D_eta*D_eta + D_phi*D_phi);
-            if (current_dR < min_dR) { min_dR = current_dR; idx_reco = j; }
         }
 
         if (idx_reco != -1 && min_dR <= 0.3) {
