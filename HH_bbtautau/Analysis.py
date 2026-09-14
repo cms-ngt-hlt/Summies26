@@ -388,8 +388,8 @@ var_configs = {
     "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$ [GeV]",  "bins": 50, "range": (120, 130)},
     "Gen_H_tt_mass":       {"branch": "Gen_H_tt_mass",      "xlabel": r"Gen $m_H(\tau \tau)$ [GeV]",  "bins": 50, "range": (120, 130)},
 
-    "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$ (b-quarks) [GeV]",  "bins": 30, "range": (200, 800)},
-    "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) [GeV]",    "bins": 30, "range": (200, 800)},
+    "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$ (b-quarks) [GeV]",  "bins": 30, "range": (100, 800)},
+    "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) [GeV]",    "bins": 30, "range": (100, 800)},
 
 
     "Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
@@ -411,7 +411,7 @@ var_configs = {
 
     # "Reco_H_tt_mass": {"branch": "Reco_H_tt_mass",  "xlabel": r"Reco $m_H(\tau \tau)$ [GeV]",  "bins": 30, "range": (100, 150)},
     # "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$ [GeV]",  "bins": 30, "range": (100, 150)},
-    # "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
+    "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
 
 }
 
@@ -474,7 +474,7 @@ for ch, cfg in channels.items():
  
 #──────────────────────────────────────────────────────────────────────── Plotting ────────────────────────────────────────────────────────────────────────────────
 def plot_kinematic(var, ch):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/"
+    path = "plots/kinematics"
     os.makedirs(path, exist_ok=True)
 
     fig, ax = plt.subplots(figsize=(10, 8))
@@ -521,7 +521,7 @@ def plot_kinematic(var, ch):
 
         
 def plot_efficiency(var, ch, save_as, scale):
-    path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Efficiency"
+    path = "plots/Efficiency"
     os.makedirs(path, exist_ok=True)
  
     fig = plt.figure(figsize=(10, 10))
@@ -618,25 +618,25 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
         arr_reco = data[f"{var}_Reco_tau_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"]
         lb   = r"Matched+$\tau$-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noBTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noBTagging"
 
     if Jet==True:
         arr_reco = data[f"{var}_Reco_jet_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_bjet_{suf}"]
         lb   = r"Matched+b-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTauTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTauTagging"
     
     if Both==True:
         arr_reco = data[f"{var}_Reco_both_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_both_tagged_{suf}"]
         lb   = r"Matched+$\tau$&b-tagged"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_withTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_withTagging"
    
     if No_tag==True: 
         arr_reco        = data[f"{var}_NGT_{suf}"]
         arr_reco_tagged = data[f"{var}_NGT_{suf}"]
         lb   = r"Matched"
-        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/plots/Reco_Efficiency_noTagging"
+        path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTagging"
     
     os.makedirs(path, exist_ok=True)
     
@@ -696,37 +696,37 @@ for var in var_configs:
     for ch in channels:
         plot_kinematic(var, ch)
 
-# for var in var_configs:
-#     for ch in channels:
-#         plot_efficiency(var, ch, save_as='png', scale='lin')
+for var in var_configs:
+    for ch in channels:
+        plot_efficiency(var, ch, save_as='png', scale='lin')
 
-# for ch in channels:
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Jet=True)
+for ch in channels:
+    plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Jet=True)
+    plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Jet=True)
 
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Tau=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Tau=True)
 
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Both=True)
+    plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Both=True)
 
 
 

@@ -99,14 +99,14 @@ def build_xlabel(var, vcfg, lepton):
         if lepton in ("mu", "e"):
             label = base + r"$(\tau)$"
         else:  # hadronic channel
-            label = base + r" subleading $\tau$"
+            label = base + r"$(\tau)$ (subleading)"
     elif "leading" in v:
         if lepton == "mu":
             label = base + r"$(\mu)$"
         elif lepton == "e":
             label = base + r"$(e)$"
         else:  # hadronic channel
-            label = base + r" leading $\tau$"
+            label = base + r"$(\tau)$ (leading)"
     else:
         label = base
 
@@ -163,8 +163,8 @@ df = (
 
     .Define("n_Gen_b",        f"Gen_b_idx.size()")
 
-    .Define("Gen_bJets_idx",  f"Match_b_to_GenJet(Gen_b_idx, GenPart_eta, GenPart_phi, GenJet_eta, GenJet_phi)")
-    .Define("Gen_bJets_flavour", "Get_Flavour_for_Jets(Gen_bJets_idx, GenJet_hadronFlavour)")
+    .Define("Gen_bJets_idx",      f"Match_b_to_GenJet(Gen_b_idx, GenPart_eta, GenPart_phi, GenJet_eta, GenJet_phi)")
+    .Define("Gen_bJets_flavour",  "Get_Flavour_for_Jets(Gen_bJets_idx, GenJet_hadronFlavour)")
     
     .Define("Gen_b_p4",       f"Get_b_p4(Gen_b_idx, GenPart_pt, GenPart_eta, GenPart_phi, GenPart_mass)")
     .Define("Gen_bjet_p4",    f"Get_b_p4(Gen_bJets_idx, GenJet_pt, GenJet_eta, GenJet_phi, GenJet_mass)")
@@ -344,6 +344,16 @@ channels = {
  
 channel = {idx: df.Filter(cfg["filter"]) for idx, cfg in channels.items()}
 
+#Get acceptance gain of L1_jet_mix
+L1_electron_mix = ['pDoubleEGEle37_24', 'pDoubleIsoTkPho22_12', 'pDoubleTkEle25_12', 'pIsoTkEleEGEle22_12', 'pSingleEGEle51', 'pSingleIsoTkEle28', 'pSingleIsoTkPho36', 'pSingleTkEle36']
+L1_jet_mix  = ['pDoublePuppiJet112_112', 'pDoublePuppiJet160_35_mass620', 'pQuadJet70_55_40_40', 'pSinglePuppiJet230']
+L1_tau_mix  = ['pDoublePuppiTau52_52']
+L1_muon_mix = ['pDoubleTkMuon15_7', 'pDoubleTkMuon_4_4_OS_Dr1p2', 'pDoubleTkMuon_4p5_4p5_OS_Er2_Mass7to18', 'pDoubleTkMuon_4p5_4p5_OS_Er2_Mass7to18', 'pDoubleTkMuon_OS_Er1p5_Dr1p4', 'pDoubleTkMuon_OS_Er1p5_Dr1p4', 'pSingleTkMuon22', 'pTripleTkMuon5_3_3', 'pTripleTkMuon_5_3_0_DoubleTkMuon_5_3_OS_MassTo9','pTripleTkMuon_5_3p5_2p5_OS_Mass5to17']
+L1_met_mix  = ['pPuppiHT400', 'pPuppiHT450', 'pPuppiMET200', 'pPuppiMHT140'] 
+
+L1_cross_mix = ['pDoubleTkElePuppiHT_8_8_390', 'pNNPuppiTauPuppiMet_55_190', 'pDoubleTkMuPuppiJetPuppiMet_3_3_60_130', 'pDoubleTkMuonTkEle5_5_9', 'pDoubleTkMuPuppiHT_3_3_300', 'pPuppiTauTkIsoEle45_22', 'pPuppiTauTkMuon42_18', 'pTkEleIsoPuppiHT_26_190', 'pTkElePuppiJet_28_40_MinDR', 'pTkEleTkMuon10_20','pTkMuPuppiJetPuppiMet_3_110_120', 'pTkMuTriPuppiJet_12_40_dRMax_DoubleJet_dEtaMax', 'pTkMuonDoubleTkEle6_17_17', 'pTkMuonPuppiHT6_320', 'pTkMuonTkEle7_23', 'pTkMuonTkIsoEle7_20']
+
+
 streams = {
 "L1_e":    channel[0].Filter("L1_pSingleEGEle51_final == true || L1_pSingleTkEle36_final == true || L1_pSingleIsoTkEle28_final == true || L1_pPuppiTauTkIsoEle45_22_final == true"),
 "L1_m":    channel[1].Filter("L1_pSingleTkMuon22_final == true || L1_pPuppiTauTkMuon42_18_final == true"),
@@ -409,30 +419,29 @@ var_configs = {
     "Gen_tau_leading_eta":    {"branch": "Gen_tau_leading_eta",    "xlabel": r"Gen $\eta$",    "bins": 30, "range": (-3, 3)},
     "Gen_tau_subleading_eta": {"branch": "Gen_tau_subleading_eta", "xlabel": r"Gen $\eta$", "bins": 30, "range": (-3, 3)},
     
-    # "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$", "bins": 4, "range": (-0.5, 3.5)},
-    # "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",   "bins": 4, "range": (-0.5, 3.5)},
+    "nGen_Muon":       {"branch": "nGen_Muon",     "xlabel": r"n Gen $\mu$", "bins": 4, "range": (-0.5, 3.5)},
+    "nGen_Electron":   {"branch": "nGen_Electron", "xlabel": r"n Gen $e$",   "bins": 4, "range": (-0.5, 3.5)},
     
-    # "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet ",   "bins": 30, "range": (0, 300)},
-    # "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet ","bins": 30, "range": (0, 300)},
+    "Gen_b_leading_jet_pt":     {"branch": "Gen_b_leading_jet_pt",     "xlabel": r"Gen $p_{T}$ Leading jet ",   "bins": 30, "range": (0, 300)},
+    "Gen_b_subleading_jet_pt":  {"branch": "Gen_b_subleading_jet_pt",  "xlabel": r"Gen $p_{T}$ Subleading jet ","bins": 30, "range": (0, 300)},
     
-    # "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
-    # "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
+    "Gen_b_leading_jet_eta":    {"branch": "Gen_b_leading_jet_eta",    "xlabel": r"Gen $\eta$ Leading jet",          "bins": 30, "range": (-3, 3)},
+    "Gen_b_subleading_jet_eta": {"branch": "Gen_b_subleading_jet_eta", "xlabel": r"Gen $\eta$ Subleading jet",       "bins": 30, "range": (-3, 3)},
     
-    # "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ ",   "bins": 30, "range": (0, 200)},
-    # "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ ", "bins": 30, "range": (0, 200)},
+    "Gen_electron_pt":  {"branch": "Gen_electron_pt",  "xlabel": r"Gen $p_{T}(e)$ ",   "bins": 30, "range": (0, 200)},
+    "Gen_muon_pt":      {"branch": "Gen_muon_pt",      "xlabel": r"Gen $p_{T}(\mu)$ ", "bins": 30, "range": (0, 200)},
  
-    # "n_Gen_b":             {"branch": "n_Gen_b",            "xlabel": r"n Gen $b$",                   "bins": 4,  "range": (-1.5, 3.5)},
+    "n_Gen_b":             {"branch": "n_Gen_b",            "xlabel": r"n Gen $b$",                   "bins": 4,  "range": (-1.5, 3.5)},
 
-    "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$ (jets)",  "bins": 30, "range": (1, 150)},
-    # "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$ (quarks)",  "bins": 50, "range": (120, 130)},
+    "Gen_H_bbjets_mass":   {"branch": "Gen_H_bbjets_mass",  "xlabel": r"Gen $m_H(b \bar{b})$",  "bins": 30, "range": (40, 150)},
+    "Gen_H_bb_mass":       {"branch": "Gen_H_bb_mass",      "xlabel": r"Gen $m_H(b \bar{b})$",  "bins": 50, "range": (120, 130)},
     
     "Gen_H_tt_mass":       {"branch": "Gen_H_tt_mass",      "xlabel": r"Gen $m_H(\tau \tau) (visible)$ [GeV]",  "bins": 50, "range": (0, 130)},
     "Gen_H_tt_all_mass":   {"branch": "Gen_H_tt_all_mass",  "xlabel": r"Gen $m_H(\tau \tau) (all)$ [GeV]",  "bins": 50, "range": (100, 130)},
 
 
-
-    # "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$ (b-quarks) ",  "bins": 30, "range": (200, 800)},
-    # "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$ (b-jets) ",    "bins": 30, "range": (200, 800)},
+    "Gen_mHH":             {"branch": "Gen_mHH",            "xlabel": r"Gen $m_{HH}$", "bins": 30, "range": (100, 700)},
+    "Gen_mHH_firstb":      {"branch": "Gen_mHH_firstb",     "xlabel": r"Gen $m_{HH}$", "bins": 30, "range": (100, 700)},
 
 
     "Reco_Matched_jet_bscore": {"branch": "Matched_jet_bscore", "xlabel": r"b-score", "bins": 30, "range": (0, 1)},
@@ -443,18 +452,18 @@ var_configs = {
     "Reco_leading_tau_pt":     {"branch": "Reco_leading_tau_pt",     "xlabel": r"Reco $p_{T}(\tau)$ Leading [GeV]",    "bins": 30, "range": (0, 300)},
     "Reco_subleading_tau_pt":  {"branch": "Reco_subleading_tau_pt",  "xlabel": r"Reco $p_{T}(\tau)$ Subleading [GeV]", "bins": 30, "range": (0, 300)},
 
-    # "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
-    # "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
+    "Reco_leading_jet_pT":     {"branch": "Reco_leading_jet_pT",    "xlabel": r"Reco $p_{T}$ Leading jet [GeV]",    "bins": 30, "range": (0, 300)},
+    "Reco_subleading_jet_pT":  {"branch": "Reco_subleading_jet_pT", "xlabel": r"Reco $p_{T}$ Subleading jet [GeV]", "bins": 30, "range": (0, 300)},
     
-    # "Reco_leading_jet_eta":    {"branch": "Reco_leading_jet_eta",    "xlabel": r"Reco $\eta$ Leading jet",    "bins": 30, "range": (-3, 3)},
-    # "Reco_subleading_jet_eta": {"branch": "Reco_subleading_jet_eta", "xlabel": r"Reco $\eta$ Subleading jet", "bins": 30, "range": (-3, 3)},
+    "Reco_leading_jet_eta":    {"branch": "Reco_leading_jet_eta",    "xlabel": r"Reco $\eta$ Leading jet",    "bins": 30, "range": (-3, 3)},
+    "Reco_subleading_jet_eta": {"branch": "Reco_subleading_jet_eta", "xlabel": r"Reco $\eta$ Subleading jet", "bins": 30, "range": (-3, 3)},
     
-    # "Reco_electron_pt": {"branch": "Reco_electron_pt", "xlabel": r"Reco $p_{T}(e)$ [GeV]",    "bins": 30, "range": (0, 200)},
-    # "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
+    "Reco_electron_pt": {"branch": "Reco_electron_pt", "xlabel": r"Reco $p_{T}(e)$ [GeV]",    "bins": 30, "range": (0, 200)},
+    "Reco_muon_pt":     {"branch": "Reco_muon_pt",     "xlabel": r"Reco $p_{T}(\mu)$ [GeV]",  "bins": 30, "range": (0, 200)},
 
-    # "Reco_H_tt_mass": {"branch": "Reco_H_tt_mass",  "xlabel": r"Reco $m_H(\tau \tau)$ [GeV]",  "bins": 30, "range": (100, 150)},
+    "Reco_H_tt_mass": {"branch": "Reco_H_tt_mass",  "xlabel": r"Reco $m_H(\tau \tau)$ [GeV]",  "bins": 30, "range": (100, 150)},
     "Reco_H_bb_mass": {"branch": "Reco_H_bb_mass",  "xlabel": r"Reco $m_H(b \bar{b})$",  "bins": 30, "range": (1, 150)},
-    # "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
+    "Reco_HH_mass":   {"branch": "Reco_HH_mass",    "xlabel": r"Reco $m_{HH}$ [GeV]",          "bins": 30, "range": (100, 800)},
 
 }
 
@@ -511,7 +520,7 @@ for ch, cfg in channels.items():
         data[f"{var}_Reco_both_{suf}"] = reco_both_arrs[vcfg["branch"]]
 
         data[f"{var}_Reco_tagged_tau_{suf}"]  = reco_tagged_tau_arrs[vcfg["branch"]]
-        data[f"{var}_Reco_bjet_{suf}"]  = reco_bjet_arrs[vcfg["branch"]]
+        data[f"{var}_Reco_bjet_{suf}"]        = reco_bjet_arrs[vcfg["branch"]]
         data[f"{var}_Reco_both_tagged_{suf}"] = reco_both_tagged_arrs[vcfg["branch"]]
 
  
@@ -564,7 +573,7 @@ def plot_kinematic(var, ch):
     ax.set_ylabel("Events")
     ax.legend(loc="upper right", fontsize=18)
     hep.cms.label("Private work", loc=2, data=True, ax=ax, rlabel = f"{process}, {decay} (200 PU) | 14 TeV", fontsize = 22)
-    ax.text(0.18, -0.07, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
+    # ax.text(0.18, -0.07, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
     
     ax.grid(True, alpha=0.75, linestyle="dashdot", linewidth=0.75)
     ax.set_ylim(0, max_count * 1.4)
@@ -646,7 +655,7 @@ def plot_efficiency(var, ch, save_as, scale):
     
     lepton = channels[ch]["lepton"]
     ax2.set_xlabel(build_xlabel(var, vcfg, lepton), fontsize=24)
-    ax2.text(0.18, -0.53, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
+    # ax2.text(0.18, -0.53, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
 
     ax.legend(loc="upper right", fontsize=20)
     if scale == 'log':
@@ -668,9 +677,9 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     lepton = channels[ch]["lepton"]
 
     hist_data = {}
-    arr_all  = data[f"{var}_all_{suf}"] #no b matching, no tau matching, no tagging
+    arr_NGT  = data[f"{var}_NGT_{suf}"] #no b matching, no tau matching, no tagging, just NGT Scouting
     if Tau==True:
-        arr_reco = data[f"{var}_Reco_tau_{suf}"] #Contains only matched tau, no b matching
+        arr_reco = data[f"{var}_Reco_tau_{suf}"]               #Contains only matched tau, no b matching
         arr_reco_tagged = data[f"{var}_Reco_tagged_tau_{suf}"] #Contains only matched and tagged tau, no b matching or tagging
         lb   = r"Matched+$\tau$-tagged"
         path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noBTagging"
@@ -684,36 +693,37 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     if Both==True:
         arr_reco = data[f"{var}_Reco_both_{suf}"]
         arr_reco_tagged = data[f"{var}_Reco_both_tagged_{suf}"]
-        lb   = r"Matched+$\tau$&b-tagged"
+        lb   = r"Matched+$\tau$, b-tagged"
         path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_withTagging"
    
     if No_tag==True: 
-        arr_reco        = data[f"{var}_NGT_{suf}"]
-        arr_reco_tagged = data[f"{var}_NGT_{suf}"]
+        arr_reco        = data[f"{var}_Reco_tau_{suf}"]
+        arr_reco_tagged = data[f"{var}_Reco_tau_{suf}"]
         lb   = r"Matched"
         path = "/eos/user/s/sbenabde/CERN_Summer_student/HH_bbtautau/Pixel_tracking/plots/Reco_Efficiency_noTagging"
     
     os.makedirs(path, exist_ok=True)
 
     max_count = 0
-    counts, edges   = np.histogram(arr_all,  bins=bins, range=rng, density=False)
+    counts, edges   = np.histogram(arr_NGT,  bins=bins, range=rng, density=False)
     counts2, edges2 = np.histogram(arr_reco, bins=bins, range=rng, density=False)
-    counts3, edges3 = np.histogram(arr_reco_tagged, bins=bins, range=rng, density=False)
     
     hist_data['all']  = counts
     hist_data['Reco'] = counts2
-    hist_data['Reco_tagged'] = counts3
     
-    hep.histplot(counts, edges, ax=ax,   label="Pass NGT",           color=color_NGT,         histtype="step", hatch= ""),
-    hep.histplot(counts2, edges2, ax=ax, label=r"$\Delta$ R Matched",color="mediumvioletred", histtype="step", hatch= "//"),
-    hep.histplot(counts3, edges3, ax=ax, label=lb,                   color="purple",          histtype="fill", hatch= ""),
+    hep.histplot(counts, edges,   ax=ax, label="Pass NGT",           color="#8494FF", histtype="step", hatch= ""),
+    hep.histplot(counts2, edges2, ax=ax, label=r"$\Delta$ R Matched",color='#C9BEFF',  histtype="step", hatch= "//"),
     
     max_count = max(max(counts), max_count)
+
+    if No_tag==False: 
+        counts3, edges3 = np.histogram(arr_reco_tagged, bins=bins, range=rng, density=False)
+        hist_data['Reco_tagged'] = counts3
+        hep.histplot(counts3, edges3, ax=ax, label=lb, color='#FFDBFD', histtype="fill", hatch= ""),
 
     ax.set_xlabel(build_xlabel(var, vcfg, lepton), fontsize=24)
     ax.set_ylabel("Events")
     hep.cms.label("Private work", loc=2, data=True, ax=ax, rlabel = f"{process}, {decay} (200 PU) | 14 TeV", fontsize = 22)
-    ax.text(0.18, -0.07, "Pixel Tracking", transform=ax.transAxes, fontsize=26, ha="right", va="top", fontweight="bold")
     
     ax.grid(True, alpha=0.75, linestyle="dashdot", linewidth=0.75)
     ax.set_ylim(0, max_count * 1.3)
@@ -722,21 +732,20 @@ def plot_reco_efficiency(var, ch, save_as, scale, No_tag = False, Tau=False, Jet
     bin_widths  = np.diff(edges)
     den         = hist_data["all"]
 
-    eff_NGT, err_NGT = eff_and_err(hist_data["Reco"], den)
-    eff_NGT2, err_NGT2 = eff_and_err(hist_data["Reco_tagged"], den)
+    if No_tag==True: 
+        eff_NGT2, err_NGT2 = eff_and_err(hist_data["Reco"], den)
+    else:
+        eff_NGT2, err_NGT2 = eff_and_err(hist_data["Reco_tagged"], den)
 
-    eff_color = "yellowgreen"
     ax2 = ax.twinx()
-    #ax2.errorbar(centers, eff_NGT, xerr=0.5 * bin_widths,  yerr=err_NGT,  color=eff_color, fmt='*', label="Reco efficiency")
-    ax2.errorbar(centers, eff_NGT2, xerr=0.5 * bin_widths, yerr=err_NGT2, color=eff_color, fmt='o', label="Reco efficiency (tagged)")
-    ax2.set_ylabel("Reconstruction efficiency", color=eff_color)
-    ax2.tick_params(axis='y', labelcolor=eff_color)
+    ax2.errorbar(centers, eff_NGT2, xerr=0.5 * bin_widths, yerr=err_NGT2, color='#6367FF', fmt='o', label="Reco efficiency")
+    ax2.set_ylabel("Reconstruction efficiency", color='#6367FF')
+    ax2.tick_params(axis='y', labelcolor='#6367FF')
     ax2.set_ylim(0, 1)
 
     leg1 = ax.legend(loc="upper right", fontsize=22)
     fig.canvas.draw()
 
-    # inv = ax2.transAxes.inverted()
     # bbox = leg1.get_window_extent()
     # bbox_axes = bbox.transformed(inv)
     # leg2 = ax2.legend(loc="upper right", bbox_to_anchor=(1, bbox_axes.y0), fontsize=22)
@@ -752,44 +761,40 @@ for var in var_configs:
     for ch in channels:
         plot_kinematic(var, ch)
 
-# for var in var_configs:
-#     for ch in channels:
-#         plot_efficiency(var, ch, save_as='png', scale='lin')
-
-for ch in channels:
-    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', No_tag=True)
-    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Tau=True)
-    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Jet=True)
-    plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Both=True)
-
-    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', No_tag=True)
-    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Tau=True)
-    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Jet=True)
-    plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Both=True)
-
-    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', No_tag=True)
-    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Tau=True)
-    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Jet=True)
-    plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Both=True)
-
-    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', No_tag=True)
-    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Tau=True)
-    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Jet=True)
-    plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Both=True)
 
 
+# for ch in channels:
+#     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', No_tag=True)
+#     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Jet=True)
+#     plot_reco_efficiency("Reco_H_bb_mass",     ch, save_as='png', scale='lin', Both=True)
 
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)
+#     plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', No_tag=True)
+#     plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Jet=True)
+#     plot_reco_efficiency("Gen_H_bbjets_mass",     ch, save_as='png', scale='lin', Both=True)
+
+#     plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', No_tag=True)
+#     plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Tau=True)
+#     plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Jet=True)
+#     plot_reco_efficiency("Reco_leading_tau_pt",     ch, save_as='png', scale='lin', Both=True)
+
+    # plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', No_tag=True)
+    # plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Tau=True)
+    # plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Jet=True)
+    # plot_reco_efficiency("Gen_tau_leading_pt",     ch, save_as='png', scale='lin', Both=True)
+
+    # plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Jet=True)
+    # plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Jet=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Jet=True)
+    # plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Jet=True)
+    # plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Jet=True)
 #     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Jet=True)
 
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
+    # plot_reco_efficiency("Gen_b_leading_jet_pt",     ch, save_as='png', scale='lin', Tau=True)
+    # plot_reco_efficiency("Gen_b_subleading_jet_pt",  ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Tau=True)
@@ -797,13 +802,12 @@ for ch in channels:
 #     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Tau=True)
 #     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Tau=True)
 
-
-#     plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
+    # plot_reco_efficiency("Gen_b_leading_jet_pt",    ch, save_as='png', scale='lin', Both=True)
+    # plot_reco_efficiency("Gen_b_subleading_jet_pt", ch, save_as='png', scale='lin', Both=True)
 #     plot_reco_efficiency("Gen_b_leading_jet_eta",    ch, save_as='png', scale='lin', Both=True)
 #     plot_reco_efficiency("Gen_b_subleading_jet_eta", ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Both=True)
-#     plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Both=True)
+    # plot_reco_efficiency("Gen_tau_leading_pt",      ch, save_as='png', scale='lin', Both=True)
+    # plot_reco_efficiency("Gen_tau_subleading_pt",   ch, save_as='png', scale='lin', Both=True)
 #     plot_reco_efficiency("Gen_tau_leading_eta",     ch, save_as='png', scale='lin', Both=True)
 #     plot_reco_efficiency("Gen_tau_subleading_eta",  ch, save_as='png', scale='lin', Both=True)
 
